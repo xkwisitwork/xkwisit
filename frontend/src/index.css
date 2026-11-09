@@ -1,0 +1,21 @@
+@tailwind base;
+
+body {
+  @apply font-sans text-400 text-neutral-900;
+}
+
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .side-scrollbar-hide {
+    scrollbar-width: none;
+  }
+
+  .side-scrollbar-hide::-webkit-scrollbar {
+    display: none !important;
+    height: 0;
+    width: 0;
+    background-color: transparent;
+  }
+}

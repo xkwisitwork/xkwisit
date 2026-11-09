@@ -1,0 +1,2 @@
+/* Re-export app globals tokens for legacy imports */
+@import "../app/globals.css";

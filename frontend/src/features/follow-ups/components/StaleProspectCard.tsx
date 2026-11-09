@@ -1,0 +1,1 @@
+export { StaleProspectCard } from "./OverdueLeads";

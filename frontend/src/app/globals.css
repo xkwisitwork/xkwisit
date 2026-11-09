@@ -1,0 +1,291 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─────────────────────────────────────────────────────────
+ DESIGN TOKENS (shadcn-compatible HSL variables)
+ ───────────────────────────────────────────────────────── */
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
+
+    --primary: 257 95% 39%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 9%;
+
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 39%;
+
+    --accent: 168 82% 43%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 350 100% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 147 100% 34%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 0 0% 94%;
+    --input: 0 0% 94%;
+    --ring: 257 95% 39%;
+
+    --radius: 0.75rem;
+
+    /* Layout */
+    --header-height: 74px;
+    --sidebar-width: 260px;
+    --sidebar-collapsed-width: 72px;
+  }
+
+  .dark {
+    --background: 240 10% 4%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 6%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 6%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 260 100% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 5% 16%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 5% 16%;
+    --muted-foreground: 240 5% 65%;
+
+    --accent: 168 82% 43%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 350 100% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 5% 16%;
+    --input: 240 5% 16%;
+    --ring: 260 100% 60%;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+ BASE ELEMENT STYLES
+ ───────────────────────────────────────────────────────── */
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1,
+      "ss01" 1;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display tracking-tight;
+  }
+
+  h4,
+  h5,
+  h6 {
+    @apply font-sans font-semibold tracking-tight;
+  }
+
+  /* Focus visible ring for keyboard users */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Remove number input spinners */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+
+  /* Selection color */
+  ::selection {
+    background-color: hsl(var(--primary) / 0.15);
+    color: hsl(var(--primary));
+  }
+}
+
+[data-sonner-toaster],
+[data-sonner-toast] {
+  font-family: var(--font-comfortaa), system-ui, sans-serif !important;
+}
+
+/* Wide tracking on a narrow phone wraps one word at a time. Keep a readable gap. */
+@media (max-width: 767px) {
+  :where([class*="tracking-["]) {
+    letter-spacing: 0.08em;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+ COMPONENT UTILITIES
+ ───────────────────────────────────────────────────────── */
+
+@layer components {
+  /*
+   * Phone layout: keep cards inside their padded shell. The old 98vw
+   * breakout caused horizontal wobble in the app/portal dashboards.
+   * Still force wrapping and min-width so flex/grid children can shrink.
+   */
+  @media (max-width: 767px) {
+    :where(h1, h2, h3, h4, p, li, button, a, label, dd, dt) {
+      overflow-wrap: break-word;
+    }
+
+    :where(.flex, .grid) > :where(:not(.inline-flex):not([class*="shrink-0"])) {
+      min-width: 0;
+    }
+  }
+
+  .side-scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .side-scrollbar-hide::-webkit-scrollbar {
+    display: none;
+    height: 0;
+    width: 0;
+    background-color: transparent;
+  }
+
+  .thin-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  }
+
+  .thin-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .thin-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .thin-scrollbar::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 9999px;
+  }
+
+  .thin-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  /* Elevated card surface */
+  .surface-card {
+    @apply rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md;
+  }
+
+  /* Subtle backdrop blur surface */
+  .surface-glass {
+    @apply rounded-2xl border border-border/60 bg-background/70 backdrop-blur-xl;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+ UTILITIES
+ ───────────────────────────────────────────────────────── */
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
+  /* Gradient text */
+  .text-gradient-primary {
+    @apply bg-gradient-to-r from-primary to-primary-400 bg-clip-text text-transparent;
+  }
+
+  /* Grid pattern background */
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  /* Dot pattern background */
+  .bg-dots {
+    background-image: radial-gradient(hsl(var(--border)) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  /* Brand shine - bold blue with a magenta edge */
+  .bg-mint-shine {
+    background-image: linear-gradient(
+      145deg,
+      #7a4dff 0%,
+      #5b45ff 28%,
+      #3b05c4 68%,
+      #2c0494 100%
+    );
+    box-shadow:
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.35),
+      inset 0 -1px 0 rgba(22, 2, 74, 0.35),
+      0 10px 28px -10px rgba(59, 5, 196, 0.55);
+    color: #ffffff;
+  }
+
+  .bg-mint-shine:hover {
+    filter: brightness(1.05);
+  }
+
+  .bg-mint-panel {
+    background-image: linear-gradient(160deg, #5b45ff 0%, #3b05c4 48%, #2c0494 100%);
+  }
+
+  .bg-mint-panel-soft {
+    background-image: linear-gradient(160deg, #e7deff 0%, #c4b2ff 45%, #7a4dff 100%);
+  }
+
+  .text-mint-shine {
+    background-image: linear-gradient(
+      120deg,
+      #3b05c4 0%,
+      #5b45ff 42%,
+      #fc3fe3 78%,
+      #3b05c4 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}

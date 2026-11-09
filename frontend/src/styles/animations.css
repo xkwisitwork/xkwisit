@@ -1,0 +1,25 @@
+@keyframes xk-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes xk-pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+.xk-fade-up {
+  animation: xk-fade-up 0.45s ease both;
+}
+.xk-pulse-soft {
+  animation: xk-pulse-soft 2.4s ease-in-out infinite;
+}
