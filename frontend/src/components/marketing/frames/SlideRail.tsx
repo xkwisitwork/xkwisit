@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 
@@ -79,7 +86,11 @@ export function SlideRail({ children }: { children: ReactNode }) {
         tabIndex={overflow ? 0 : undefined}
         style={
           mask
-            ? { maskImage: mask, WebkitMaskImage: mask, maskMode: "alpha", WebkitMaskMode: "alpha" }
+            ? ({
+                maskImage: mask,
+                WebkitMaskImage: mask,
+                maskMode: "alpha",
+              } as CSSProperties)
             : undefined
         }
         className="flex cursor-grab snap-x snap-mandatory touch-pan-x items-center gap-2 overflow-x-auto overscroll-x-contain scroll-pl-[3.5rem] scroll-pr-[5.4rem] py-1 active:cursor-grabbing [scrollbar-width:none] [&>*]:snap-start [&::-webkit-scrollbar]:hidden"

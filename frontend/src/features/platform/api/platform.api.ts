@@ -80,8 +80,8 @@ export type PlatformAuditEvent = {
   at: string;
 };
 
-function withAuth(accessToken?: string | null) {
-  if (!accessToken) return {};
+function withAuth(accessToken?: string | null): Record<string, string> | undefined {
+  if (!accessToken) return undefined;
   return { Authorization: `Bearer ${accessToken}` };
 }
 

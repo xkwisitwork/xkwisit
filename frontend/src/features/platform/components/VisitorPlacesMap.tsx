@@ -39,8 +39,9 @@ function FitPlaces({ places, focusKey }: { places: MapPlace[]; focusKey: string 
       return;
     }
 
-    if (places.length === 1) {
-      map.setView([places[0].latitude, places[0].longitude], 6);
+    const only = places[0];
+    if (places.length === 1 && only) {
+      map.setView([only.latitude, only.longitude], 6);
       return;
     }
 

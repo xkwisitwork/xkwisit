@@ -62,7 +62,8 @@ const HEAT_VALUES: readonly (readonly number[])[] = [
 
 function heatFill(value: number, peak: number, laneIndex: number) {
   const t = peak <= 0 ? 0 : Math.min(1, value / peak);
-  const [r, g, b] = HEAT_LANE_RGB[laneIndex] ?? HEAT_LANE_RGB[0];
+  const fallback: readonly [number, number, number] = [22, 2, 74];
+  const [r, g, b] = HEAT_LANE_RGB[laneIndex] ?? HEAT_LANE_RGB[0] ?? fallback;
   const alpha = 0.22 + t * 0.78;
   return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`;
 }
@@ -148,7 +149,8 @@ export function BookCoverDash({
         </div>
         <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
           {HEAT_LANES.map((lane, index) => {
-            const [r, g, b] = HEAT_LANE_RGB[index] ?? HEAT_LANE_RGB[0];
+            const fallback: readonly [number, number, number] = [22, 2, 74];
+            const [r, g, b] = HEAT_LANE_RGB[index] ?? HEAT_LANE_RGB[0] ?? fallback;
             return (
               <span key={lane} className="inline-flex items-center gap-1.5 text-[0.58rem] text-white/55">
                 <span

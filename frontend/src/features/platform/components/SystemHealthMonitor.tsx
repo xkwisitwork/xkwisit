@@ -88,7 +88,8 @@ function DotMatrixWave({
         {Array.from({ length: cols * rows }, (_, idx) => {
           const col = idx % cols;
           const row = Math.floor(idx / cols);
-          const waveRow = Math.round((1 - wave[col]) * (rows - 1));
+          const waveVal = wave[col] ?? 0.5;
+          const waveRow = Math.round((1 - waveVal) * (rows - 1));
           const dist = Math.abs(row - waveRow);
           const onWave = dist === 0;
           const near = dist === 1;

@@ -3,8 +3,8 @@ import { endpoints } from "@/lib/api/endpoints";
 
 import type { DashboardOverview } from "../types";
 
-function authHeaders(accessToken?: string | null) {
-  return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+function authHeaders(accessToken?: string | null): Record<string, string> | undefined {
+  return accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
 }
 
 /** Authenticated workspace overview from the API — never invents tenants. */

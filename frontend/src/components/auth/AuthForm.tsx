@@ -68,7 +68,7 @@ function isSafeBrowsePath(pathname: string) {
  * a protected app route that just sends the user back to login.
  */
 function useAuthBackHref() {
-  const [href, setHref] = useState(ROUTES.home);
+  const [href, setHref] = useState<string>(ROUTES.home);
   const [label, setLabel] = useState("Back to home");
 
   useEffect(() => {
@@ -165,7 +165,7 @@ function AuthInput({
   reduceMotion,
   delay = 0,
   ...props
-}: ComponentPropsWithoutRef<"input"> & {
+}: Omit<ComponentPropsWithoutRef<"input">, "onDrag" | "onDragStart" | "onDragEnd" | "onAnimationStart"> & {
   reduceMotion?: boolean | null;
   delay?: number;
 }) {
