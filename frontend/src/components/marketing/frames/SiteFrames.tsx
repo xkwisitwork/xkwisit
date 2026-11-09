@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from "react";
+import { type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -32,6 +32,27 @@ import {
 
 import { Bounce, Reveal, Stagger } from "@/components/marketing/motion/Reveal";
 import { SlideRail } from "@/components/marketing/frames/SlideRail";
+
+/**
+ * Data-URI scoop mask (not `url(#id)`). Fragment masks break on many
+ * production browsers / WebKit, which warps the hero chip tray.
+ * White = photo visible; evenodd punches the bottom-center notch so the
+ * white stage shows through for the SlideRail chips.
+ */
+const HERO_SCOOP_MASK = `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" preserveAspectRatio="none"><path fill="#fff" fill-rule="evenodd" d="M0 0h1000v1000H0zM110 1000c35 0 48-8 58-45 14-55 30-93 60-99h544c30 6 46 44 60 99 10 37 23 45 58 45z"/></svg>`,
+)}")`;
+
+const heroScoopMaskStyle: CSSProperties = {
+  maskImage: HERO_SCOOP_MASK,
+  WebkitMaskImage: HERO_SCOOP_MASK,
+  maskSize: "100% 100%",
+  WebkitMaskSize: "100% 100%",
+  maskRepeat: "no-repeat",
+  WebkitMaskRepeat: "no-repeat",
+  maskPosition: "center",
+  WebkitMaskPosition: "center",
+};
 
 type FrameNote = {
   title: string;
@@ -181,8 +202,6 @@ export function FrameHero({
   const left = stats?.[0];
   const right = stats?.[1];
   const hasStage = Boolean(image);
-  const scoopId = `scoop${useId().replace(/:/g, "")}`;
-  const scoopMask = `url(#${scoopId})`;
 
   return (
     <div className="bg-white">
@@ -218,30 +237,19 @@ export function FrameHero({
       {hasStage ? (
         <div className="px-4 pb-10 pt-8 tablet:px-8 tablet:pb-14 tablet:pt-10">
           <div className="relative mx-auto max-w-5xl overflow-hidden rounded-[1.6rem] bg-white tablet:rounded-[2rem]">
-            <svg className="absolute h-0 w-0" aria-hidden>
-              <defs>
-                <mask id={scoopId} maskUnits="objectBoundingBox" maskContentUnits="objectBoundingBox">
-                  <rect width="1" height="1" fill="white" />
-                  <path
-                    fill="black"
-                    d="M0.11,1 C0.145,1 0.158,0.992 0.168,0.955 C0.182,0.90 0.198,0.862 0.228,0.856 L0.772,0.856 C0.802,0.862 0.818,0.90 0.832,0.955 C0.842,0.992 0.855,1 0.89,1 Z"
-                  />
-                </mask>
-              </defs>
-            </svg>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={image}
               alt={imageAlt}
-              style={{ maskImage: scoopMask, WebkitMaskImage: scoopMask }}
+              style={heroScoopMaskStyle}
               className={`h-[26rem] w-full object-cover tablet:h-[32rem] laptop:h-[36rem] ${imagePosition}`}
             />
             <div
-              style={{ maskImage: scoopMask, WebkitMaskImage: scoopMask }}
+              style={heroScoopMaskStyle}
               className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(22,2,74,0.35)_0%,rgba(22,2,74,0.05)_42%,rgba(22,2,74,0.28)_100%)]"
             />
             {left ? (
-              <div className="absolute left-4 top-4 max-w-[46%] text-white tablet:left-8 tablet:top-8">
+              <div className="absolute left-4 top-4 z-[1] max-w-[46%] text-white tablet:left-8 tablet:top-8">
                 <p className="font-display text-[clamp(1.7rem,4.6vw,3.4rem)] font-bold leading-none tracking-tight [overflow-wrap:anywhere]">
                   {left.value}
                 </p>
@@ -249,7 +257,7 @@ export function FrameHero({
               </div>
             ) : null}
             {right ? (
-              <div className="absolute bottom-[22%] right-4 max-w-[40%] text-right text-white tablet:right-8">
+              <div className="absolute bottom-[22%] right-4 z-[1] max-w-[40%] text-right text-white tablet:right-8">
                 <p className="font-display text-[clamp(1rem,2vw,1.35rem)] font-bold leading-snug [overflow-wrap:anywhere]">
                   {right.value}
                 </p>
@@ -257,7 +265,7 @@ export function FrameHero({
               </div>
             ) : null}
             {names && names.length > 0 ? (
-              <div className="absolute inset-x-[18%] bottom-3 tablet:inset-x-[24%] tablet:bottom-4">
+              <div className="absolute inset-x-[12%] bottom-3 z-[2] tablet:inset-x-[18%] tablet:bottom-4 laptop:inset-x-[22%]">
                 <SlideRail>
                   {names.map((entry) => {
                     const name = nameOf(entry);

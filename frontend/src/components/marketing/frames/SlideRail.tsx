@@ -33,12 +33,15 @@ export function SlideRail({ children }: { children: ReactNode }) {
     observer.observe(el);
     el.addEventListener("scroll", measure, { passive: true });
     const fonts = document.fonts?.ready.then(measure);
+    // Remeasure after layout settles (production fonts / hydration).
+    const raf = window.requestAnimationFrame(measure);
     return () => {
       observer.disconnect();
       el.removeEventListener("scroll", measure);
+      window.cancelAnimationFrame(raf);
       void fonts;
     };
-  }, []);
+  }, [children]);
 
   const nudge = (direction: -1 | 1) => {
     const el = rail.current;
@@ -71,29 +74,34 @@ export function SlideRail({ children }: { children: ReactNode }) {
   };
 
   const overflow = edges.left || edges.right;
+  // Soft edge fade — leave room for the Swipe / prev controls.
   const maskStops = [
-    edges.left ? "transparent 0, transparent 3rem, #fff 3.5rem" : "#fff 0",
-    edges.right ? "#fff calc(100% - 6.4rem), transparent calc(100% - 4.6rem)" : "#fff 100%",
+    edges.left ? "transparent 0, transparent 2.75rem, #fff 3.25rem" : "#fff 0",
+    edges.right ? "#fff calc(100% - 5.75rem), transparent calc(100% - 4.25rem)" : "#fff 100%",
   ].join(", ");
   const mask = overflow ? `linear-gradient(to right, ${maskStops})` : undefined;
+  const maskStyle = mask
+    ? ({
+        maskImage: mask,
+        WebkitMaskImage: mask,
+        maskMode: "alpha",
+        WebkitMaskMode: "alpha",
+        maskSize: "100% 100%",
+        WebkitMaskSize: "100% 100%",
+        maskRepeat: "no-repeat",
+        WebkitMaskRepeat: "no-repeat",
+      } as CSSProperties)
+    : undefined;
 
   return (
-    <div className="relative">
+    <div className="relative min-w-0">
       <div
         ref={rail}
         role="region"
         aria-label="Swipe sideways for more"
         tabIndex={overflow ? 0 : undefined}
-        style={
-          mask
-            ? ({
-                maskImage: mask,
-                WebkitMaskImage: mask,
-                maskMode: "alpha",
-              } as CSSProperties)
-            : undefined
-        }
-        className="flex cursor-grab snap-x snap-mandatory touch-pan-x items-center gap-2 overflow-x-auto overscroll-x-contain scroll-pl-[3.5rem] scroll-pr-[5.4rem] py-1 active:cursor-grabbing [scrollbar-width:none] [&>*]:snap-start [&::-webkit-scrollbar]:hidden"
+        style={maskStyle}
+        className="flex cursor-grab snap-x snap-mandatory touch-pan-x items-center gap-2 overflow-x-auto overscroll-x-contain scroll-pl-3 scroll-pr-[5.75rem] py-1 active:cursor-grabbing [scrollbar-width:none] [&>*]:shrink-0 [&>*]:snap-start [&::-webkit-scrollbar]:hidden"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={end}
