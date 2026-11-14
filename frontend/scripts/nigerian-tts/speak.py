@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Synthesize male Nigerian English (Abeo) via Microsoft Edge neural TTS."""
+"""Synthesize speech via Microsoft Edge neural TTS (multi-voice)."""
 
 from __future__ import annotations
 
@@ -9,11 +9,11 @@ import sys
 
 import edge_tts
 
-VOICE = "en-NG-AbeoNeural"
+DEFAULT_VOICE = "en-NG-AbeoNeural"
 
 
-async def synthesize(text: str, out_path: str) -> None:
-    communicate = edge_tts.Communicate(text, VOICE, rate="+2%")
+async def synthesize(text: str, out_path: str, voice: str, rate: str) -> None:
+    communicate = edge_tts.Communicate(text, voice, rate=rate)
     await communicate.save(out_path)
 
 
@@ -21,6 +21,8 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--text", required=True)
     parser.add_argument("--out", required=True)
+    parser.add_argument("--voice", default=DEFAULT_VOICE)
+    parser.add_argument("--rate", default="+2%")
     args = parser.parse_args()
 
     text = " ".join(args.text.split()).strip()
@@ -31,8 +33,10 @@ def main() -> int:
         print("text too long", file=sys.stderr)
         return 2
 
+    voice = (args.voice or DEFAULT_VOICE).strip() or DEFAULT_VOICE
+
     try:
-        asyncio.run(synthesize(text, args.out))
+        asyncio.run(synthesize(text, args.out, voice, args.rate))
     except Exception as exc:  # noqa: BLE001 — surface to Node caller
         print(str(exc), file=sys.stderr)
         return 1

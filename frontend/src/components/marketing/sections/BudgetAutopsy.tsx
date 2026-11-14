@@ -186,8 +186,8 @@ export function BudgetAutopsy() {
 
   return (
     <section className="relative overflow-x-clip bg-[#f7f8fc]">
-      <div className="px-4 pb-4 pt-16 mobile-sm:px-5 tablet:px-8 tablet:pt-20">
-        <div className="mx-auto max-w-2xl text-center">
+      <div className="pb-4 pt-16 tablet:px-8 tablet:pt-20">
+        <div className="mx-auto max-w-2xl px-4 text-center mobile-sm:px-5 tablet:px-0">
           <p className="font-display text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-[#3B05C4]">
             Where the money goes
           </p>
@@ -208,7 +208,7 @@ export function BudgetAutopsy() {
           </p>
         </div>
 
-        <div className="mx-auto mt-10 grid max-w-6xl gap-4">
+        <div className="mx-auto mt-10 grid w-[98%] max-w-6xl gap-4 tablet:w-full">
           <article
             className="rounded-[1.75rem] bg-white p-5 shadow-[0_24px_50px_-36px_rgba(22,2,74,0.35)] mobile-sm:p-7"
             style={{
@@ -266,14 +266,14 @@ export function BudgetAutopsy() {
         </div>
       </div>
 
-      <Container className="relative px-4 pb-16 pt-10 mobile-sm:px-5 tablet:px-8 tablet:pb-20">
+      <Container bare className="relative w-full pb-16 pt-10 tablet:px-8 tablet:pb-20">
         {/* Halo-style dashboard board */}
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-40px" }}
           transition={{ duration: 0.45, delay: reduce ? 0 : 0.06 }}
-          className="mx-auto grid w-[98%] gap-3 tablet:gap-4 laptop:grid-cols-[1.35fr_0.95fr]"
+          className="mx-auto grid w-[98%] gap-3 tablet:w-full tablet:gap-4 laptop:grid-cols-[1.35fr_0.95fr]"
         >
           {/* Left column */}
           <div className="grid gap-3 tablet:gap-4">
@@ -701,14 +701,14 @@ export function BudgetAutopsy() {
         </motion.div>
       </Container>
 
-      {/* FOMO - full 98% viewport width (outside Container) */}
-      <div className="pb-16 tablet:pb-20">
+      {/* FOMO - 98% on mobile, aligned with container padding on tablet+ */}
+      <div className="pb-16 tablet:px-8 tablet:pb-20">
         <motion.aside
           initial={reduce ? false : { opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-40px" }}
           transition={{ duration: 0.45 }}
-          className="relative mx-auto mt-10 w-[98%] overflow-hidden rounded-[2rem] border border-white/60 bg-gradient-to-br from-mint-soft/80 via-white/50 to-[#E7DEFF]/70 p-4 shadow-[0_28px_60px_-42px_rgba(59,5,196,0.35)] backdrop-blur-xl mobile-sm:rounded-[2.25rem] mobile-sm:p-5 tablet:p-7"
+          className="relative mx-auto mt-10 w-[98%] overflow-hidden rounded-[2rem] border border-white/60 bg-gradient-to-br from-mint-soft/80 via-white/50 to-[#E7DEFF]/70 p-4 shadow-[0_28px_60px_-42px_rgba(59,5,196,0.35)] backdrop-blur-xl mobile-sm:rounded-[2.25rem] mobile-sm:p-5 tablet:w-full tablet:p-7"
         >
           <div
             aria-hidden
@@ -786,12 +786,12 @@ export function BudgetAutopsy() {
               </article>
             </div>
 
-            <div className="w-full rounded-[1.75rem] border border-white/60 bg-white/30 p-3.5 shadow-[0_20px_48px_-28px_rgba(59,5,196,0.4)] backdrop-blur-2xl mobile-sm:rounded-[2rem] mobile-sm:p-4">
+            <div className="w-full tablet:rounded-[1.75rem] tablet:bg-white/30 tablet:p-4 tablet:shadow-[0_20px_48px_-28px_rgba(59,5,196,0.4)] tablet:backdrop-blur-2xl">
               <div className="mb-3 flex items-center justify-between gap-2 px-1">
                 <p className="font-display text-[0.95rem] font-bold italic text-mint-ink">
                   What keeps walking out
                 </p>
-                <span className="rounded-full border border-white/80 bg-white/60 px-2.5 py-1 text-[0.68rem] font-semibold text-mint backdrop-blur-md">
+                <span className="rounded-full bg-white/60 px-2.5 py-1 text-[0.68rem] font-semibold text-mint backdrop-blur-md">
                   4 truths
                 </span>
               </div>
@@ -821,7 +821,7 @@ export function BudgetAutopsy() {
                 ].map((point) => (
                   <li
                     key={point.title}
-                    className="w-full rounded-[1.35rem] border border-white/70 bg-white/50 p-4 shadow-[0_12px_28px_-20px_rgba(59,5,196,0.35)] backdrop-blur-xl"
+                    className="w-full rounded-[1.35rem] bg-white/70 p-4 shadow-[0_12px_28px_-20px_rgba(59,5,196,0.35)] backdrop-blur-xl"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <p className="font-display text-[1.02rem] font-bold text-mint-ink">

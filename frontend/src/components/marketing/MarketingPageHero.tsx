@@ -206,8 +206,8 @@ export function MarketingCtaBand({
 }: MarketingCtaBandProps) {
   return (
     <div className="bg-white">
-      <Container className="px-4 pb-12 mobile-sm:px-5 tablet:px-8 tablet:pb-16">
-        <div className="overflow-hidden rounded-[2rem] bg-mint-ink px-6 py-12 text-white mobile-sm:px-10 tablet:px-14 tablet:py-16">
+      <Container bare className="w-full pb-12 tablet:px-8 tablet:pb-16">
+        <div className="mx-auto w-[98%] overflow-hidden rounded-[2rem] bg-mint-ink px-6 py-12 text-white mobile-sm:px-10 tablet:w-full tablet:px-14 tablet:py-16">
           <p className="font-display text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-mint-soft/80">
             Next step
           </p>

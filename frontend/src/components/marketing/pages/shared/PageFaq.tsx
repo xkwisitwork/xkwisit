@@ -31,13 +31,13 @@ export function PageFaq({
 
   return (
     <section className="relative bg-[#F5F5F7] text-[#16024A]">
-      <div className="mx-auto w-full max-w-5xl px-4 py-12 mobile-sm:px-5 tablet:px-8 tablet:py-16 laptop:py-20">
+      <div className="mx-auto w-full max-w-5xl py-12 tablet:px-8 tablet:py-16 laptop:py-20">
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 28, scale: 0.985 }}
           whileInView={{ opacity: 1, y: 0, scale: 1 }}
           viewport={{ once: true, amount: 0.2 }}
           transition={{ type: "spring", stiffness: 240, damping: 26 }}
-          className="relative overflow-hidden rounded-[1.75rem] border border-[#ECEAF2] bg-white shadow-[0_24px_60px_-36px_rgba(22,2,74,0.28)] tablet:rounded-[2rem]"
+          className="relative mx-auto w-[98%] overflow-hidden rounded-[1.75rem] border border-[#ECEAF2] bg-white shadow-[0_24px_60px_-36px_rgba(22,2,74,0.28)] tablet:w-full tablet:rounded-[2rem]"
         >
           {/* Soft ambient wash — kept light */}
           <div

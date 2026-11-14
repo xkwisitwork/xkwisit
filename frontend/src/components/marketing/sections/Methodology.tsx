@@ -17,8 +17,8 @@ const steps = [
 export function Methodology() {
   return (
     <section id="methodology" className="relative overflow-x-clip bg-white">
-      <Container className="relative px-4 py-16 mobile-sm:px-5 tablet:px-8 tablet:py-24">
-        <div className="mx-auto max-w-2xl text-center">
+      <Container bare className="relative w-full py-16 tablet:px-8 tablet:py-24">
+        <div className="mx-auto max-w-2xl px-4 text-center mobile-sm:px-5 tablet:px-0">
           <p className="font-display text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-[#3B05C4]">
             How we work with you
           </p>
@@ -31,7 +31,8 @@ export function Methodology() {
           </p>
         </div>
 
-        <div className="mt-8 grid gap-3 tablet:grid-cols-[1.05fr_0.95fr]">
+        <div className="mx-auto mt-8 w-[98%] space-y-3 tablet:w-full">
+        <div className="grid gap-3 tablet:grid-cols-[1.05fr_0.95fr]">
           <article className="rounded-[1.75rem] bg-[#F4F0FF] p-5 mobile-sm:p-7">
             <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#3B05C4]">
               01 · What’s stuck
@@ -92,7 +93,7 @@ export function Methodology() {
           </div>
         </div>
 
-        <article className="mt-3 rounded-[1.75rem] border border-[#E7DEFF] bg-white p-5 mobile-sm:p-7">
+        <article className="rounded-[1.75rem] border border-[#E7DEFF] bg-white p-5 mobile-sm:p-7">
           <div className="grid items-center gap-5 tablet:grid-cols-[0.9fr_1.1fr_0.7fr]">
             <div>
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#3B05C4]">
@@ -130,7 +131,7 @@ export function Methodology() {
           </div>
         </article>
 
-        <div className="mt-3 grid gap-3 tablet:grid-cols-[1.15fr_0.85fr]">
+        <div className="grid gap-3 tablet:grid-cols-[1.15fr_0.85fr]">
           <div className="relative min-h-[18rem] overflow-hidden rounded-[1.75rem]">
             <Image
               src="/images/people/method-monday.jpg"
@@ -177,7 +178,7 @@ export function Methodology() {
           </article>
         </div>
 
-        <article className="mt-3 grid gap-5 rounded-[1.75rem] bg-[#16024A] p-5 text-white mobile-sm:p-7 tablet:grid-cols-[0.85fr_1.15fr] tablet:items-center">
+        <article className="grid gap-5 rounded-[1.75rem] bg-[#16024A] p-5 text-white mobile-sm:p-7 tablet:grid-cols-[0.85fr_1.15fr] tablet:items-center">
           <div>
             <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#FC3FE3]">
               04 · One spend
@@ -217,8 +218,9 @@ export function Methodology() {
             />
           </div>
         </article>
+        </div>
 
-        <p className="mt-4 text-[0.78rem] leading-relaxed text-neutral-600">
+        <p className="mx-auto mt-4 w-[98%] text-[0.78rem] leading-relaxed text-neutral-600 tablet:w-full">
           This is an example Monday. Yours uses your real problem and your real people.
         </p>
       </Container>

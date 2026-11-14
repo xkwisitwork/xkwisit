@@ -93,13 +93,13 @@ export function ConstraintOracle() {
 
   return (
     <section className="relative overflow-x-clip bg-white">
-      <Container className="relative px-4 py-16 mobile-sm:px-5 tablet:px-8 tablet:py-20">
+      <Container bare className="relative w-full py-16 tablet:px-8 tablet:py-20">
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.4 }}
-          className="mx-auto max-w-2xl text-center"
+          className="mx-auto max-w-2xl px-4 text-center mobile-sm:px-5 tablet:px-0"
         >
           <p className="font-display text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-mint">
             Sound familiar?
@@ -113,7 +113,7 @@ export function ConstraintOracle() {
           </p>
         </motion.div>
 
-        <div className="mx-auto mt-12 grid max-w-5xl gap-6 laptop:grid-cols-[1fr_1.05fr]">
+        <div className="mx-auto mt-12 grid w-[98%] max-w-5xl gap-6 tablet:w-full laptop:grid-cols-[1fr_1.05fr]">
           <ul className="flex flex-col gap-2">
             {symptoms.map((s) => {
               const selected = s.id === activeId;

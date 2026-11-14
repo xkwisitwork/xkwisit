@@ -50,8 +50,8 @@ export default function BookPageClient() {
       />
 
       <div className="bg-[linear-gradient(180deg,#FFFFFF_0%,#F4F0FF_42%,#FFFFFF_100%)]">
-        <Container id="booking" className="relative scroll-mt-24 px-4 py-8 mobile-sm:px-5 tablet:px-8 tablet:py-12">
-          <div className="grid gap-4 mobile-sm:gap-5 tablet:gap-6 laptop:grid-cols-[1.05fr_0.95fr] laptop:items-start laptop:gap-8">
+        <Container bare id="booking" className="relative w-full scroll-mt-24 py-8 tablet:px-8 tablet:py-12">
+          <div className="mx-auto grid w-[98%] gap-4 mobile-sm:gap-5 tablet:w-full tablet:gap-6 laptop:grid-cols-[1.05fr_0.95fr] laptop:items-start laptop:gap-8">
             <BookingForm />
 
             <aside className="flex flex-col gap-3 mobile-sm:gap-4">

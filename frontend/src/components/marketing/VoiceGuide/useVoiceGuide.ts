@@ -41,13 +41,20 @@ const FINAL_SETTLE_MS = 900;
 const SILENCE_HINT_MS = 3800;
 const MIN_FINAL_CHARS = 2;
 
-export function useVoiceGuide(open: boolean, autoListen = false) {
+export function useVoiceGuide(
+  open: boolean,
+  autoListen = false,
+  /** Preferred answer language for the site locale switcher */
+  answerLocale: string = "en",
+) {
   const [messages, setMessages] = useState<VoiceGuideMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [interim, setInterim] = useState("");
   const [listening, setListening] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [muted, setMuted] = useState(false);
+  const answerLocaleRef = useRef(answerLocale);
+  answerLocaleRef.current = answerLocale;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [level, setLevel] = useState(0);
@@ -184,17 +191,40 @@ export function useVoiceGuide(open: boolean, autoListen = false) {
         throw new Error(json.error?.message || "Could not get an answer.");
       }
 
+      let reply = json.data.reply;
+      if (answerLocaleRef.current !== "en") {
+        try {
+          const tr = await fetch("/api/translate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              texts: [reply],
+              target: answerLocaleRef.current,
+            }),
+          });
+          const trJson = (await tr.json()) as {
+            success?: boolean;
+            data?: { translations?: string[] };
+          };
+          const next = trJson.data?.translations?.[0]?.trim();
+          if (tr.ok && trJson.success && next) reply = next;
+        } catch {
+          // Keep English reply if translation fails
+        }
+      }
+
       const assistantMsg: VoiceGuideMessage = {
         id: `a-${Date.now()}`,
         role: "assistant",
-        text: json.data.reply,
+        text: reply,
         cta: json.data.cta,
       };
       setMessages((prev) => [...prev, assistantMsg]);
       setSpeaking(true);
       setStatus("speaking");
-      speakText(json.data.reply, {
+      speakText(reply, {
         muted: mutedRef.current,
+        locale: answerLocaleRef.current,
         onEnd: () => {
           setSpeaking(false);
           setStatus("idle");
@@ -268,7 +298,7 @@ export function useVoiceGuide(open: boolean, autoListen = false) {
       if (!wantListenRef.current || busyRef.current) return;
 
       const recognition = new Ctor();
-      recognition.lang = preferredRecognitionLang();
+      recognition.lang = preferredRecognitionLang(answerLocaleRef.current);
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;

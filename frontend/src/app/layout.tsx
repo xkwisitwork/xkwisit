@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { Comfortaa } from "next/font/google";
+import { JetBrains_Mono, Poppins } from "next/font/google";
 
 import { Providers } from "@/contexts/Providers";
 import { siteConfig } from "@/config/site";
@@ -9,10 +9,17 @@ import "@/app/globals.css";
 
 /* ─── Fonts ─────────────────────────────────────────────── */
 
-const comfortaa = Comfortaa({
+const poppins = Poppins({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-comfortaa",
+  variable: "--font-poppins",
+  weight: ["400", "500", "600", "700"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-mono",
   weight: ["400", "500", "600", "700"],
 });
 
@@ -86,7 +93,11 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={comfortaa.variable}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${poppins.variable} ${jetbrainsMono.variable}`}
+    >
       <body className="min-h-screen bg-white font-sans text-400 text-neutral-900 antialiased">
         <Providers>{children}</Providers>
       </body>

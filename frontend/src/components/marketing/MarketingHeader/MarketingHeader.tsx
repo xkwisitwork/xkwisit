@@ -21,6 +21,7 @@ import { HamburgerButton } from "./HamburgerButton";
 import { GetStartedMenu } from "./GetStartedMenu";
 import { ROUTES } from "@/config/site";
 import { CurrencySelect } from "@/components/marketing/CurrencySelect";
+import { LanguageSelect } from "@/components/marketing/LanguageSelect";
 
 const megaMenus: Record<string, typeof servicesMegaMenu> = {
   "/services": servicesMegaMenu,
@@ -159,8 +160,9 @@ export function MarketingHeader() {
             </ul>
           </nav>
 
-          {/* Mic stays in the bar chrome — never inside the hamburger drawer */}
-          <div className="ml-auto flex shrink-0 items-center gap-1 tablet:gap-2">
+          {/* Mic + language stay in the bar chrome — never inside the hamburger drawer */}
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 tablet:gap-2">
+            <LanguageSelect className="shrink-0" />
             <VoiceGuideTrigger className="h-8 w-8 tablet:h-9 tablet:w-9" />
 
             <div className="hidden items-center gap-1 tablet:flex laptop:gap-2">

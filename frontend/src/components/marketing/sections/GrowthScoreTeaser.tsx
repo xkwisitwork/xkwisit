@@ -23,14 +23,14 @@ const signals = [
 export function GrowthScoreTeaser() {
   return (
     <section className="relative overflow-x-clip bg-white">
-      <Container className="relative px-4 py-16 mobile-sm:px-5 tablet:px-8 tablet:py-20">
+      <Container bare className="relative w-full py-16 tablet:px-8 tablet:py-20">
         <div className="grid items-center gap-10">
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.4 }}
-            className="mx-auto max-w-2xl text-center"
+            className="mx-auto max-w-2xl px-4 text-center mobile-sm:px-5 tablet:px-0"
           >
             <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3.5 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-neutral-700">
               <ScanSearch className="h-3.5 w-3.5 text-mint" aria-hidden />
@@ -73,7 +73,7 @@ export function GrowthScoreTeaser() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.45, delay: 0.06 }}
-            className="relative mx-auto min-h-[28rem] w-full max-w-3xl overflow-hidden rounded-[1.75rem] bg-[#F4F0FF]"
+            className="relative mx-auto min-h-[28rem] w-[98%] max-w-3xl overflow-hidden rounded-[1.75rem] bg-[#F4F0FF] tablet:w-full"
           >
             <Image
               src="/images/people/method-owner.jpg"

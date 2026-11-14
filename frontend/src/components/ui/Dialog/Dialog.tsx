@@ -50,6 +50,8 @@ export type DialogContentProps = ComponentPropsWithoutRef<
   hideCloseButton?: boolean;
   /** Max width preset. */
   size?: "sm" | "md" | "lg" | "xl";
+  /** Optional className for the dimmed overlay. */
+  overlayClassName?: string;
 };
 
 const sizeMap = {
@@ -63,12 +65,19 @@ export const DialogContent = forwardRef<
   ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
 >(function DialogContent(
-  { className, children, hideCloseButton, size = "md", ...props },
+  {
+    className,
+    children,
+    hideCloseButton,
+    size = "md",
+    overlayClassName,
+    ...props
+  },
   ref,
 ) {
   return (
     <DialogPortal>
-      <DialogOverlay />
+      <DialogOverlay className={overlayClassName} />
       <DialogPrimitive.Content
         ref={ref}
         className={cn(

@@ -140,8 +140,8 @@ export function ProjectsShowcase() {
 
   return (
     <section className="relative overflow-x-clip bg-white">
-      <Container className="relative px-4 py-16 mobile-sm:px-5 tablet:px-8 tablet:py-20">
-        <div className="mx-auto max-w-2xl text-center">
+      <Container bare className="relative w-full py-16 tablet:px-8 tablet:py-20">
+        <div className="mx-auto max-w-2xl px-4 text-center mobile-sm:px-5 tablet:px-0">
           <p className="font-display text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-mint">
             Two sides. One system.
           </p>
@@ -155,7 +155,7 @@ export function ProjectsShowcase() {
         </div>
 
         {/* Soft stage behind the modal - attachment glassmorphism feel */}
-        <div className="relative mx-auto mt-10 max-w-5xl">
+        <div className="relative mx-auto mt-10 w-[98%] max-w-5xl tablet:w-full">
           <div
             aria-hidden
             className="pointer-events-none absolute -inset-4 rounded-[2.5rem] bg-[radial-gradient(ellipse_at_30%_20%,rgba(59,5,196,0.14),transparent_55%),radial-gradient(ellipse_at_80%_70%,rgba(252,63,227,0.1),transparent_50%)] blur-sm"

@@ -33,8 +33,8 @@ export function MarketingFooter() {
   const columns = [...footerColumns, socialColumn];
 
   return (
-    <footer className="bg-[#F5F5F7] px-4 pb-6 pt-4 mobile-sm:px-5 tablet:px-6 tablet:pb-8 laptop:px-8">
-      <div className="mx-auto w-full max-w-6xl overflow-hidden rounded-[1.75rem] bg-[#0B0B0D] text-white shadow-[0_28px_80px_-48px_rgba(11,11,13,0.65)] tablet:rounded-[2rem]">
+    <footer className="bg-[#F5F5F7] pb-6 pt-4 tablet:pb-8">
+      <div className="mx-auto w-[98%] overflow-hidden rounded-[1.75rem] bg-[#0B0B0D] text-white shadow-[0_28px_80px_-48px_rgba(11,11,13,0.65)] tablet:rounded-[2rem]">
         {/* Top: brand + nav */}
         <div className="grid gap-10 px-6 pt-10 tablet:px-8 tablet:pt-12 laptop:grid-cols-[minmax(0,0.95fr)_minmax(0,1.55fr)] laptop:gap-12 laptop:px-10 laptop:pt-14">
           <div className="max-w-sm">

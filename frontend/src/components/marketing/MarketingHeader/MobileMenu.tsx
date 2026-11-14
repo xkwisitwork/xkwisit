@@ -17,6 +17,7 @@ import {
 } from "@/config/navigation/marketingNav";
 import { MarketingNavItem } from "./MarketingNavItem";
 import { CurrencySelect } from "@/components/marketing/CurrencySelect";
+import { LanguageSelect } from "@/components/marketing/LanguageSelect";
 
 export type MobileMenuProps = {
   isOpen: boolean;
@@ -76,9 +77,12 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             aria-label="Mobile navigation"
             className="fixed inset-y-0 right-0 z-50 w-full max-w-md overflow-y-auto bg-white p-6 tablet:hidden"
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <LogoFull size="sm" />
-              <CurrencySelect />
+              <div className="flex items-center gap-2">
+                <LanguageSelect />
+                <CurrencySelect />
+              </div>
               <IconButton
                 aria-label="Close menu"
                 icon={<X className="h-5 w-5" />}

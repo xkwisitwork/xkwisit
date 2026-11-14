@@ -15,13 +15,13 @@ export function CtaSection() {
 
   return (
     <section className="relative overflow-x-clip bg-[#f3f5f8] py-14 tablet:py-20">
-      <Container className="relative px-4 mobile-sm:px-5 tablet:px-8">
+      <Container bare className="relative w-full tablet:px-8">
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 36, scale: 0.98 }}
           whileInView={{ opacity: 1, y: 0, scale: 1 }}
           viewport={{ once: true, margin: "-10% 0px" }}
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          className="relative overflow-hidden rounded-[2rem] bg-mint px-6 py-12 text-white mobile-sm:px-10 tablet:px-14 tablet:py-16"
+          className="relative mx-auto w-[98%] overflow-hidden rounded-[2rem] bg-mint px-6 py-12 text-white mobile-sm:px-10 tablet:w-full tablet:px-14 tablet:py-16"
         >
           <motion.span
             aria-hidden
@@ -41,7 +41,7 @@ export function CtaSection() {
               <p className="font-display text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-white/70">
                 {siteConfig.name}
               </p>
-              <h2 className="mt-3 max-w-xl font-display text-[clamp(1.7rem,4vw,2.7rem)] font-bold leading-[1.05] tracking-tight">
+              <h2 className="mt-3 whitespace-nowrap font-display text-[length:clamp(0.9rem,calc((100vw-5rem)/14.5),2.7rem)] font-bold leading-[1.15] tracking-[-0.03em]">
                 Check free - or talk to us.
               </h2>
               <p className="mt-4 max-w-xl text-[0.95rem] leading-relaxed text-white/80">

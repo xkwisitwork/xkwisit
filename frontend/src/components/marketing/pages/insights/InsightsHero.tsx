@@ -20,8 +20,8 @@ export function InsightsHero({
   const reduce = useReducedMotion();
 
   return (
-    <section className="bg-[#f3f2f4] px-4 py-10 text-[#16024A] tablet:px-8 tablet:py-16">
-      <div className="rounded-[2rem] bg-white p-4 shadow-[0_30px_70px_-40px_rgba(22,2,74,0.45)] tablet:p-6">
+    <section className="bg-[#f3f2f4] py-10 text-[#16024A] tablet:px-8 tablet:py-16">
+      <div className="mx-auto w-[98%] rounded-[2rem] bg-white p-4 shadow-[0_30px_70px_-40px_rgba(22,2,74,0.45)] tablet:w-full tablet:p-6">
         <div className="grid items-stretch gap-4 laptop:grid-cols-2 laptop:gap-6">
           <div className="grid gap-3">
             <div className="overflow-hidden rounded-[1.4rem] bg-[#F4F0FF]">

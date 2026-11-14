@@ -148,13 +148,13 @@ export function CaseStudyPreview() {
 
   return (
     <section id="work" className="relative overflow-x-clip bg-white">
-      <Container className="relative px-4 py-16 mobile-sm:px-5 tablet:px-8 tablet:py-20">
+      <Container bare className="relative w-full py-16 tablet:px-8 tablet:py-20">
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 14 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.4 }}
-          className="mx-auto max-w-2xl text-center"
+          className="mx-auto w-[98%] max-w-2xl text-center tablet:w-full"
         >
           <p className="font-display text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-mint">
             Selected work
@@ -170,30 +170,32 @@ export function CaseStudyPreview() {
         </motion.div>
 
         <div
-          className="mt-8 flex justify-center gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="mx-auto mt-8 w-[98%] overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden tablet:w-full tablet:overflow-visible"
           role="tablist"
           aria-label="Filter projects by type"
         >
-          {filters.map((item) => {
-            const on = filter === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                role="tab"
-                aria-selected={on}
-                onClick={() => setFilter(item.id)}
-                className={cn(
-                  "shrink-0 rounded-full px-4 py-2 text-[0.8rem] font-semibold transition-colors",
-                  on
-                    ? "bg-mint text-white"
-                    : "bg-mint-soft text-mint-ink hover:bg-[#E7DEFF]",
-                )}
-              >
-                {item.label}
-              </button>
-            );
-          })}
+          <div className="flex w-max min-w-full justify-start gap-2 tablet:mx-auto tablet:justify-center">
+            {filters.map((item) => {
+              const on = filter === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => setFilter(item.id)}
+                  className={cn(
+                    "shrink-0 rounded-full px-4 py-2 text-[0.8rem] font-semibold transition-colors",
+                    on
+                      ? "bg-mint text-white"
+                      : "bg-mint-soft text-mint-ink hover:bg-[#E7DEFF]",
+                  )}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <AnimatePresence mode="wait">
@@ -203,7 +205,7 @@ export function CaseStudyPreview() {
             animate={{ opacity: 1, y: 0 }}
             exit={reduce ? undefined : { opacity: 0, y: -6 }}
             transition={{ duration: 0.28 }}
-            className="mt-8 grid gap-5 tablet:grid-cols-2 laptop:grid-cols-3"
+            className="mx-auto mt-8 grid w-[98%] gap-5 tablet:w-full tablet:grid-cols-2 laptop:grid-cols-3"
           >
             {visible.map((project, index) => (
               <li

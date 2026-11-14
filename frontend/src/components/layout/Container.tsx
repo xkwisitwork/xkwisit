@@ -29,7 +29,7 @@ export const Container = forwardRef<HTMLDivElement, ContainerProps>(function Con
     <div
       ref={ref}
       className={cn(
-        "mx-auto w-full",
+        "mx-auto w-[98%] tablet:w-full",
         sizeMap[size],
         !bare && "px-4 tablet:px-8",
         className,

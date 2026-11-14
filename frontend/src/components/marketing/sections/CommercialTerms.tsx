@@ -128,21 +128,19 @@ export function CommercialTerms() {
   useEffect(() => {
     if (reduce || paused) return;
     const timer = window.setInterval(() => {
-      setSlide((current) => {
-        // On overview, advance row page first, then next slide
-        if (current === 0) {
-          setRowPage((page) => {
-            if (page + 1 < rowPages) return page + 1;
-            setSlide(1);
-            return 0;
-          });
-          return current;
-        }
-        return (current + 1) % slideCount;
-      });
+      if (slide === 0 && rowPage + 1 < rowPages) {
+        setRowPage((page) => page + 1);
+        return;
+      }
+      if (slide === 0) {
+        setRowPage(0);
+        setSlide(1);
+        return;
+      }
+      setSlide((current) => (current + 1) % slideCount);
     }, 4800);
     return () => window.clearInterval(timer);
-  }, [reduce, paused, slideCount, rowPages]);
+  }, [reduce, paused, slide, rowPage, rowPages, slideCount]);
 
   function go(delta: number) {
     setPaused(true);
@@ -157,8 +155,8 @@ export function CommercialTerms() {
 
   return (
     <section className="relative overflow-x-clip bg-white">
-      <Container className="relative px-3 py-14 mobile-sm:px-5 mobile-sm:py-16 tablet:px-8 tablet:py-20">
-        <div className="mx-auto max-w-2xl px-1 text-center mobile-sm:px-0">
+      <Container bare className="relative w-full py-14 mobile-sm:py-16 tablet:px-8 tablet:py-20">
+        <div className="mx-auto max-w-2xl px-4 text-center mobile-sm:px-5 tablet:px-0">
           <p className="font-display text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-mint">
             Before we start
           </p>
@@ -176,22 +174,23 @@ export function CommercialTerms() {
 
         {/* —— Mobile only: single-card carousel —— */}
         <div
-          className="mx-auto mt-8 w-full max-w-lg tablet:hidden"
+          className="mx-auto mt-8 w-[98%] max-w-lg tablet:hidden"
           onTouchStart={() => setPaused(true)}
           role="region"
           aria-roledescription="carousel"
           aria-label="Pay rules"
         >
-          <div className="relative mx-auto w-[98%]">
-            <AnimatePresence mode="wait">
+          {/* Fixed-height stage so slide swaps don't reflow sections below */}
+          <div className="relative mx-auto w-full min-h-[32rem]">
+            <AnimatePresence initial={false} mode="sync">
               <motion.article
                 key={`${slide}-${rowPage}`}
-                initial={reduce ? false : { opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduce ? undefined : { opacity: 0, y: -8 }}
-                transition={{ duration: 0.28 }}
+                initial={reduce ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={reduce ? undefined : { opacity: 0 }}
+                transition={{ duration: 0.22 }}
                 className={cn(
-                  "overflow-hidden rounded-[1.6rem] border border-mint-ice/80 bg-white shadow-[0_20px_40px_-28px_rgba(22,2,74,0.35)]",
+                  "absolute inset-x-0 top-0 overflow-hidden rounded-[1.6rem] border border-mint-ice/80 bg-white shadow-[0_20px_40px_-28px_rgba(22,2,74,0.35)]",
                   slide > 0 && rules[slide - 1]?.shell,
                   slide > 0 && "border-transparent",
                 )}
@@ -300,7 +299,7 @@ export function CommercialTerms() {
 
 function GrowthPackageBanner({ bookHref }: { bookHref: string }) {
   return (
-    <article className="relative mt-6 overflow-hidden rounded-[1.75rem] bg-[#16024A] text-white shadow-[0_28px_60px_-28px_rgba(22,2,74,0.55)] tablet:mt-8">
+    <article className="relative mx-auto mt-6 w-[98%] overflow-hidden rounded-[1.75rem] bg-[#16024A] text-white shadow-[0_28px_60px_-28px_rgba(22,2,74,0.55)] tablet:mt-8 tablet:w-full">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-[0.18]"

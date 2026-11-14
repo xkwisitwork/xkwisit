@@ -5,7 +5,7 @@ import { useReducedMotion } from "framer-motion";
 
 import { cn } from "@/lib/utils/cn";
 
-const BAR_COUNT = 28;
+const BAR_COUNT = 36;
 
 export type VoiceWaveformProps = {
   active: boolean;
@@ -13,6 +13,8 @@ export type VoiceWaveformProps = {
   getBars?: (count: number) => number[];
   /** Overall 0–1 voice level */
   level?: number;
+  /** Visual palette — brand (default) or slate like the recording sheet reference */
+  tone?: "brand" | "slate";
   className?: string;
 };
 
@@ -23,6 +25,7 @@ export function VoiceWaveform({
   active,
   getBars,
   level = 0,
+  tone = "brand",
   className,
 }: VoiceWaveformProps) {
   const reduce = useReducedMotion();
@@ -32,11 +35,13 @@ export function VoiceWaveform({
   const getBarsRef = useRef(getBars);
   const levelRef = useRef(level);
   const reduceRef = useRef(reduce);
+  const toneRef = useRef(tone);
 
   activeRef.current = active;
   getBarsRef.current = getBars;
   levelRef.current = level;
   reduceRef.current = reduce;
+  toneRef.current = tone;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -64,6 +69,7 @@ export function VoiceWaveform({
       const prefersReduce = reduceRef.current;
       const voiceLevel = levelRef.current;
       const readBars = getBarsRef.current;
+      const slate = toneRef.current === "slate";
 
       const bars =
         isActive && readBars && !prefersReduce
@@ -75,7 +81,7 @@ export function VoiceWaveform({
               return isActive ? 0.14 + wave * 0.1 : 0.08 + wave * 0.05;
             });
 
-      const gap = 3;
+      const gap = 2.5;
       const barW = Math.max(2, (width - gap * (BAR_COUNT - 1)) / BAR_COUNT);
       const mid = height / 2;
       const boost = isActive ? 0.55 + voiceLevel * 0.9 : 0.45;
@@ -86,13 +92,18 @@ export function VoiceWaveform({
         const x = i * (barW + gap);
         const y = mid - h / 2;
 
-        const speakingHard = isActive && voiceLevel > 0.08;
-        const grad = ctx.createLinearGradient(0, y, 0, y + h);
-        grad.addColorStop(0, speakingHard ? "#8B6CFF" : "#C4B5FF");
-        grad.addColorStop(0.5, "#3B05C4");
-        grad.addColorStop(1, speakingHard ? "#FC3FE3" : "#6B3DFF");
+        if (slate) {
+          const speakingHard = isActive && voiceLevel > 0.08;
+          ctx.fillStyle = speakingHard ? "#2F4A55" : "#6B7C86";
+        } else {
+          const speakingHard = isActive && voiceLevel > 0.08;
+          const grad = ctx.createLinearGradient(0, y, 0, y + h);
+          grad.addColorStop(0, speakingHard ? "#8B6CFF" : "#C4B5FF");
+          grad.addColorStop(0.5, "#3B05C4");
+          grad.addColorStop(1, speakingHard ? "#FC3FE3" : "#6B3DFF");
+          ctx.fillStyle = grad;
+        }
 
-        ctx.fillStyle = grad;
         const radius = Math.min(barW / 2, 4);
         roundRect(ctx, x, y, barW, h, radius);
         ctx.fill();

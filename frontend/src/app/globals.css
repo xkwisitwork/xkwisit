@@ -140,7 +140,23 @@
 
 [data-sonner-toaster],
 [data-sonner-toast] {
-  font-family: var(--font-comfortaa), system-ui, sans-serif !important;
+  font-family: var(--font-poppins), system-ui, sans-serif !important;
+}
+
+/* Sitewide — monospace for uppercase tracked labels / eyebrows */
+:is(
+  p[class*="uppercase"][class*="tracking"],
+  span[class*="uppercase"][class*="tracking"],
+  label[class*="uppercase"][class*="tracking"]
+) {
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--font-mono), ui-monospace, monospace;
 }
 
 /* Wide tracking on a narrow phone wraps one word at a time. Keep a readable gap. */

@@ -127,8 +127,9 @@ const config: Config = {
       },
 
       fontFamily: {
-        sans: ["var(--font-comfortaa)", "system-ui", "sans-serif"],
-        display: ["var(--font-comfortaa)", "system-ui", "sans-serif"],
+        sans: ["var(--font-poppins)", "system-ui", "sans-serif"],
+        display: ["var(--font-poppins)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
       },
 
       borderRadius: {
@@ -166,6 +167,10 @@ const config: Config = {
           from: { transform: "translateX(0)" },
           to: { transform: "translateX(-33.333%)" },
         },
+        "letter-drop": {
+          from: { opacity: "0", transform: "translateY(-0.55em)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
       },
 
       animation: {
@@ -177,6 +182,7 @@ const config: Config = {
         "spin-slow": "spin 10s linear infinite",
         "pulse-subtle": "pulse-subtle 2s ease-in-out infinite",
         marquee: "marquee 28s linear infinite",
+        "letter-drop": "letter-drop 0.48s cubic-bezier(0.22, 1, 0.36, 1) both",
       },
     },
   },

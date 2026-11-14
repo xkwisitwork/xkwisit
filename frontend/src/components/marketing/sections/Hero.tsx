@@ -1,678 +1,706 @@
 "use client";
 
-import Image from "next/image";
+import { useEffect, useId, useRef, useState, type PointerEvent } from "react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
-import { ArrowRight, Check, Phone, ShieldCheck } from "lucide-react";
-import { buttonVariants } from "@/components/ui/Button/variants";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import {
+  ArrowRight,
+  Calendar,
+  Phone,
+  Zap,
+} from "lucide-react";
+
 import { Container } from "@/components/layout/Container";
-import { ROUTES, siteConfig } from "@/config/site";
+import { ROUTES } from "@/config/site";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils/cn";
 
-const CALL_HREF = "tel:+2349023177560";
-const LAGOS_TZ = "Africa/Lagos";
+const ease = [0.22, 1, 0.36, 1] as const;
 
-const partners = ["NORTHLINE", "APEX", "HARBOR", "LEDGER", "ORBIT"] as const;
-
-const growthLenses = [
-  { id: "brand", label: "Brand", share: 34, color: "#3B05C4" },
-  { id: "demand", label: "Demand", share: 28, color: "#FC3FE3" },
-  { id: "sales", label: "Sales", share: 22, color: "#5B45FF" },
-  { id: "content", label: "Content", share: 16, color: "#C40404" },
+const partners = [
+  { name: "YETOSOL", href: "https://yetosol.com" },
+  { name: "GYGI", href: "https://gygi.org" },
+  { name: "STAYTROVE", href: "https://web.staytrove.com" },
+  { name: "OCTOPUS", href: null },
+  { name: "LAGBUY", href: "https://www.lagbuy.com" },
 ] as const;
 
-const avatarStack = [
-  "/images/hero/avatar.jpg",
-  "/images/hero/operator.jpg",
-  "/images/hero/consultant-nigerian.png",
+/** Shared payloads that Name-Drop across the three cards (left → right). */
+const flowPayloads = [
+  {
+    kind: "easy" as const,
+    title: "New project",
+    meta: "Yetosol · live",
+  },
+  {
+    kind: "listen" as const,
+    quote: "Harbor Logistics flagged at risk",
+    who: "Mission pulse · 3m ago",
+  },
+  {
+    kind: "tools" as const,
+    label: "Collected",
+    value: "₦4.2M",
+    points: [28, 42, 38, 55, 48, 72, 68, 86],
+  },
+  {
+    kind: "easy" as const,
+    title: "Book strategy",
+    meta: "30-min growth X-ray",
+  },
+  {
+    kind: "listen" as const,
+    quote: "Apex Retail scored hot",
+    who: "Lead → pipeline · today",
+  },
+  {
+    kind: "tools" as const,
+    label: "Pipeline",
+    value: "₦12.8M",
+    points: [34, 40, 52, 48, 66, 70, 82, 90],
+  },
+  {
+    kind: "easy" as const,
+    title: "Open pipeline",
+    meta: "₦12.8M weighted",
+  },
+  {
+    kind: "listen" as const,
+    quote: "Brand pack v3 cleared",
+    who: "Approval · yesterday",
+  },
+  {
+    kind: "tools" as const,
+    label: "Open leads",
+    value: "18",
+    points: [22, 35, 48, 44, 62, 58, 78, 92],
+  },
 ] as const;
 
-const weekFocus = [
-  { label: "Offer clarity", tone: "high" as const },
-  { label: "Paid LP leak", tone: "med" as const },
-] as const;
+type FlowPayload = (typeof flowPayloads)[number];
 
-const SLOT_HOURS = [9, 10, 11, 14, 15, 16] as const;
+const cardMeta = [
+  {
+    id: "growth",
+    eyebrow: "We make it clear",
+    body: "Brand, ads, and sales on one scoreboard.",
+    image: "/images/desks/growth.jpg",
+  },
+  {
+    id: "review",
+    eyebrow: "Delivery review",
+    body: "See what’s slipping before the week runs you.",
+    image: "/images/people/desk-review.jpg",
+  },
+  {
+    id: "owner",
+    eyebrow: "Mission Control",
+    body: "Built for agency owners who want Monday numbers.",
+    image: "/images/hero/xkwisit-hero-agency.jpg",
+  },
+  {
+    id: "ops",
+    eyebrow: "We listen to operators",
+    body: "Across Africa — less noise, clearer levers.",
+    image: "/images/people/method-owner.jpg",
+  },
+  {
+    id: "pipeline",
+    eyebrow: "We give you tools",
+    body: "Collected, pipeline, seats, and what’s at risk.",
+    image: "/images/levers/sales-pipeline.jpg",
+  },
+  {
+    id: "monday",
+    eyebrow: "Monday numbers",
+    body: "One scoreboard for the whole growth system.",
+    image: "/images/levers/ops-monday.jpg",
+  },
+  {
+    id: "brand",
+    eyebrow: "Brand first",
+    body: "Fix the broken part before you spend more.",
+    image: "/images/desks/brand.jpg",
+  },
+] as const;
 
 /**
- * Funnel-style Mission Control hero × Xkwisit bento DNA.
- * Centered composition, floating growth UI, call ripple always on.
+ * Ash word — CSS letter-drop (not Framer).
+ * Framer + MotionConfig reducedMotion="user" can leave opacity:0 forever;
+ * CSS defaults to visible and only animates under motion-safe.
+ */
+function EmphasizedWord({
+  children,
+  reduce,
+}: {
+  children: string;
+  reduce: boolean;
+}) {
+  const letters = Array.from(children);
+
+  return (
+    <span
+      className="relative inline-block overflow-visible whitespace-nowrap text-[#5C5C66]"
+      aria-label={children}
+      data-no-translate
+    >
+      {letters.map((char, i) => (
+        <span
+          key={`${char}-${i}`}
+          className={cn(
+            "relative inline-block text-[#5C5C66] opacity-100",
+            !reduce && "motion-safe:animate-letter-drop",
+          )}
+          style={
+            reduce
+              ? undefined
+              : { animationDelay: `${0.12 + i * 0.075}s` }
+          }
+          aria-hidden
+        >
+          {char === " " ? "\u00A0" : char}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * Landing hero — ticketapp copy + cylindrical cover-flow cards (all breakpoints).
  */
 export function Hero() {
+  const reduce = useReducedMotion();
+  const { locale } = useLanguage();
+  const pcm = locale === "pcm";
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    if (reduce) return;
+    const id = window.setInterval(() => setTick((t) => t + 1), 2800);
+    return () => window.clearInterval(id);
+  }, [reduce]);
+
   return (
-    <section className="relative overflow-x-clip bg-white">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.55]"
-        style={{
-          backgroundImage: `
- linear-gradient(to right, rgba(15,23,42,0.045) 1px, transparent 1px),
- linear-gradient(to bottom, rgba(15,23,42,0.045) 1px, transparent 1px)
- `,
-          backgroundSize: "56px 56px",
-          maskImage:
-            "radial-gradient(ellipse 75% 65% at 50% 35%, black 20%, transparent 75%)",
-          WebkitMaskImage:
-            "radial-gradient(ellipse 75% 65% at 50% 35%, black 20%, transparent 75%)",
-        }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-[-8%] h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,_rgba(59,5,196,0.14),_transparent_68%)]"
-      />
-
-      <Container className="relative px-4 pb-14 pt-8 mobile-sm:px-5 mobile-md:pb-16 mobile-md:pt-10 tablet:px-8 tablet:pb-20 tablet:pt-12">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55 }}
-          className="mx-auto max-w-3xl text-center"
+    <section className="relative overflow-x-clip bg-[#F7F8FA]">
+      <Container className="relative px-4 pb-14 pt-10 mobile-sm:px-5 mobile-md:pb-16 mobile-md:pt-12 tablet:px-8 tablet:pb-20 tablet:pt-14">
+        <div
+          className="mx-auto max-w-[44rem] text-center tablet:max-w-[52rem]"
+          data-no-translate={pcm ? true : undefined}
         >
-          <p className="font-display text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-mint mobile-sm:text-300">
-            {siteConfig.name}
+          {pcm ? (
+            <h1 className="mx-auto max-w-[20em] text-balance font-display text-[clamp(1.75rem,6.4vw,3.75rem)] font-bold leading-[1.22] tracking-[-0.03em] text-[#16024A] tablet:leading-[1.14]">
+              Na system wey dey{" "}
+              <EmphasizedWord reduce={!!reduce}>show wetin dey spoil</EmphasizedWord>{" "}
+              for your business be this
+            </h1>
+          ) : (
+            <h1 className="mx-auto max-w-[14em] text-balance font-display text-[clamp(2rem,6.8vw,4.1rem)] font-bold leading-[1.18] tracking-[-0.03em] text-[#16024A] tablet:leading-[1.12]">
+              Growth System that{" "}
+              <EmphasizedWord reduce={!!reduce}>Exposes</EmphasizedWord> Leaks in
+              Your Business.
+            </h1>
+          )}
+
+          <p className="mx-auto mt-6 max-w-xl text-[0.95rem] leading-relaxed text-[#16024A]/75 mobile-sm:mt-7 mobile-sm:text-[1.05rem] tablet:mt-8">
+            {pcm
+              ? "We go look your brand, maybe ads, and your sales as one business. Then we go name di part wey don spoil, and fix am before you waste another week for di same ads."
+              : "We look at your brand, your ads, and your sales as one business. Then we name the broken part, fix that before you spend another week on the same ads."}
           </p>
 
-          <h1 className="mt-4 font-display text-[clamp(1.85rem,6.4vw,3.75rem)] font-bold leading-[1.08] tracking-tight text-neutral-900">
-            Growth System{" "}
-            <span className="font-semibold text-neutral-600">that Exposes Leaks </span> in
-            Your Business.
-          </h1>
-
-          <p className="mx-auto mt-4 max-w-xl text-[0.95rem] leading-relaxed text-neutral-600 mobile-sm:mt-5 mobile-sm:text-400 mobile-md:text-500">
-            We look at your brand, your ads, and your sales as one business. Then we name
-            the broken part, and fix that before you spend another week on the same ads.
-          </p>
-
-          <div className="mt-6 flex flex-col items-stretch justify-center gap-2.5 mobile-sm:mt-7 mobile-sm:gap-3 tablet:flex-row tablet:items-center">
+          <div className="mt-7 flex flex-col items-stretch justify-center gap-2.5 tablet:mt-8 tablet:flex-row tablet:items-center tablet:gap-3">
             <Link
               href={ROUTES.book}
-              className={cn(
-                buttonVariants({ variant: "contained", size: "lg" }),
-                "!rounded-full border-0 !bg-mint !text-white shadow-none hover:!bg-mint-deep",
-                "min-h-12 w-full justify-center px-7 tablet:w-auto",
-              )}
+              className="inline-flex min-h-[3.1rem] items-center justify-center gap-2 rounded-full bg-[#3B05C4] px-7 text-[0.92rem] font-semibold text-white shadow-[0_14px_32px_-16px_rgba(59,5,196,0.65)] transition hover:bg-[#2C0494]"
             >
-              Book a strategy call
-              <ArrowRight className="h-4 w-4" aria-hidden />
+              <Zap className="h-4 w-4" aria-hidden />
+              {pcm ? "Book strategy call" : "Book a strategy call"}
             </Link>
             <Link
-              href={ROUTES.services}
-              className={cn(
-                buttonVariants({ variant: "outlined", size: "lg" }),
-                "!rounded-full !border-neutral-400 !bg-white !text-neutral-900 hover:!border-mint hover:!bg-mint-soft hover:!text-mint-ink",
-                "min-h-12 w-full justify-center px-7 tablet:w-auto",
-              )}
+              href={ROUTES.growthAssessment}
+              className="inline-flex min-h-[3.1rem] items-center justify-center gap-2 rounded-full border border-[#16024A]/12 bg-white px-7 text-[0.92rem] font-semibold text-[#16024A] shadow-sm transition hover:bg-white/80"
             >
-              Explore services
+              <Phone className="h-4 w-4" aria-hidden />
+              {pcm ? "Free growth check" : "Free Growth Assessment"}
             </Link>
           </div>
+        </div>
 
-          <ul className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-300 text-neutral-600 mobile-sm:mt-5 mobile-md:text-400">
-            <li className="inline-flex items-center gap-1.5">
-              <Check className="h-3.5 w-3.5 text-mint" aria-hidden />
-              Free growth X-ray
-            </li>
-            <li className="inline-flex items-center gap-1.5">
-              <Check className="h-3.5 w-3.5 text-mint" aria-hidden />
-              Built for African operators
-            </li>
-          </ul>
-        </motion.div>
+        <FeatureDeck tick={tick} reduce={!!reduce} />
 
-        <motion.div
-          initial={{ opacity: 0, y: 28 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="relative mx-auto mt-10 w-full max-w-5xl mobile-sm:mt-12 tablet:mt-14"
-        >
-          <MissionCollage />
-        </motion.div>
-
-        <div className="mx-auto mt-12 max-w-3xl text-center mobile-md:mt-14 tablet:mt-16">
-          <p className="text-300 text-neutral-600 mobile-md:text-400">
-            Trusted by operators across Africa&apos;s leading growth brands
+        <div className="mx-auto mt-12 max-w-3xl text-center tablet:mt-16">
+          <div className="mx-auto mb-4 h-14 w-14 overflow-hidden rounded-full ring-2 ring-white shadow-md">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/people/founder-smile.jpg"
+              alt=""
+              className="h-full w-full object-cover"
+              draggable={false}
+            />
+          </div>
+          <p className="font-display text-[1.15rem] font-bold text-[#16024A] tablet:text-[1.35rem]">
+            Clear Monday numbers
           </p>
-          <ul className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mobile-md:gap-x-8 tablet:gap-x-10">
-            {partners.map((name, i) => (
-              <li
-                key={name}
-                className={cn(
-                  "font-display text-[0.65rem] font-semibold uppercase tracking-[0.14em] mobile-sm:text-300 tablet:text-400",
-                  i === 1 ? "text-mint-deep" : "text-neutral-600",
-                )}
-              >
-                {name}
-              </li>
-            ))}
-          </ul>
+          <p className="mx-auto mt-2 max-w-lg text-[0.9rem] leading-relaxed text-[#16024A]/80">
+            “We stopped guessing which lever was broken. Xkwisit named the leak — then the
+            same ad spend started closing.”
+          </p>
+          <p className="mt-3 text-[0.78rem] font-semibold text-[#16024A]/70">
+            Ada Okonkwo · Agency owner, Yetosol
+          </p>
+
+          <PartnerPills reduce={!!reduce} />
         </div>
       </Container>
     </section>
   );
 }
 
-function MissionCollage() {
-  return (
-    <div className="relative mx-auto w-full">
-      {/*
- Real 3-col grid on tablet+ so floats never cover the portrait,
- call, or each other. Mobile stacks in reading order.
- */}
-      <div className="grid grid-cols-1 gap-3 tablet:grid-cols-[minmax(0,200px)_minmax(0,1fr)_minmax(0,200px)] tablet:items-start tablet:gap-3.5 laptop:grid-cols-[minmax(0,220px)_minmax(0,1fr)_minmax(0,220px)] laptop:gap-5">
-        <motion.div
-          animate={{ y: [0, -5, 0] }}
-          transition={{ duration: 5.2, repeat: Infinity, ease: "easeInOut" }}
-          className="order-2 flex flex-col gap-2.5 tablet:order-1 tablet:gap-3"
-        >
-          <PipelineCard />
-          <TrustPulseCard />
-        </motion.div>
-
-        <div className="relative z-10 order-1 mx-auto w-full max-w-[520px] tablet:order-2 tablet:max-w-none">
-          <div className="relative overflow-hidden rounded-[1.5rem] mobile-sm:rounded-[1.75rem] tablet:rounded-[2rem]">
-            <div className="relative aspect-[4/3] min-h-[220px] w-full mobile-sm:min-h-[260px] tablet:min-h-[280px] laptop:min-h-[320px]">
-              <Image
-                src="/images/hero/HeroImg.jpeg"
-                alt={`${siteConfig.name} growth consultant`}
-                fill
-                priority
-                className="object-cover object-[50%_16%]"
-                sizes="(max-width: 768px) 92vw, 520px"
-              />
-              <div
-                aria-hidden
-                className="absolute inset-0 bg-gradient-to-t from-neutral-900/40 via-transparent to-neutral-900/10"
-              />
-
-              <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[0.7rem] font-semibold text-neutral-800 shadow-sm backdrop-blur-sm mobile-sm:left-4 mobile-sm:top-4 mobile-sm:px-3 mobile-sm:text-300">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inset-0 animate-ping rounded-full bg-mint/70" />
-                  <span className="relative h-2 w-2 rounded-full bg-mint" />
-                </span>
-                This week’s numbers
-              </span>
-
-              <div className="absolute bottom-3 left-3 flex items-center gap-2 mobile-sm:bottom-4 mobile-sm:left-4">
-                <div className="flex -space-x-2">
-                  {avatarStack.map((src) => (
-                    <span
-                      key={src}
-                      className="relative h-7 w-7 overflow-hidden rounded-full ring-2 ring-white mobile-sm:h-8 mobile-sm:w-8"
-                    >
-                      <Image
-                        src={src}
-                        alt=""
-                        fill
-                        className="object-cover"
-                        sizes="32px"
-                      />
-                    </span>
-                  ))}
-                </div>
-                <span className="rounded-full bg-white/95 px-2.5 py-1 text-[0.65rem] font-semibold text-neutral-700 backdrop-blur-sm mobile-sm:text-300">
-                  NG · KE · ZA
-                </span>
-              </div>
-
-              <div className="absolute bottom-3 right-3 hidden max-w-[55%] flex-wrap justify-end gap-1.5 laptop:bottom-4 laptop:right-4 laptop:flex">
-                {growthLenses.map((lens, i) => (
-                  <span
-                    key={lens.id}
-                    className={cn(
-                      "rounded-full px-2.5 py-1 text-[0.65rem] font-semibold",
-                      i === 0
-                        ? "bg-mint text-white"
-                        : "border border-white/50 bg-white/90 text-neutral-800 backdrop-blur-sm",
-                    )}
-                  >
-                    {lens.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="relative z-30 -mt-7 flex justify-center mobile-sm:-mt-8 tablet:-mt-9">
-            <a
-              href={CALL_HREF}
-              aria-label="Call Xkwisit"
-              className="group outline-none transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-mint focus-visible:ring-offset-2"
-            >
-              <CallRipple />
-            </a>
-          </div>
-        </div>
-
-        <motion.div
-          animate={{ y: [0, -5, 0] }}
-          transition={{
-            duration: 4.6,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 0.35,
-          }}
-          className="order-3 flex flex-col gap-2.5 tablet:gap-3"
-        >
-          <FocusCard />
-          <LiveBooker />
-        </motion.div>
-      </div>
-
-      <div className="mt-3 flex flex-wrap justify-center gap-1.5 laptop:hidden">
-        {growthLenses.map((lens, i) => (
-          <span
-            key={`m-${lens.id}`}
-            className={cn(
-              "rounded-full px-3 py-1.5 text-[0.7rem] font-semibold",
-              i === 0
-                ? "bg-mint text-white"
-                : "border border-neutral-400/70 bg-white text-neutral-700",
-            )}
-          >
-            {lens.label}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-const cardShell =
-  "rounded-[1.25rem] border border-neutral-400/60 bg-white p-3.5 shadow-[0_18px_44px_-22px_rgba(15,23,42,0.32)] mobile-sm:rounded-[1.35rem] mobile-sm:p-4";
-
-function PipelineCard() {
-  const r = 32;
-  const c = 2 * Math.PI * r;
-  let offset = 0;
-
-  return (
-    <div className={cardShell}>
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="text-[0.65rem] font-medium text-neutral-600 mobile-sm:text-[0.7rem]">
-            Growth mix this month
-          </p>
-          <p className="mt-0.5 font-display text-500 font-bold text-neutral-900">
-            ₦24.3M
-          </p>
-        </div>
-        <span className="rounded-full bg-mint-soft px-2 py-0.5 text-[0.65rem] font-bold text-mint">
-          ↑ 21%
-        </span>
-      </div>
-
-      <div className="mt-2.5 flex items-center gap-2.5">
-        <svg viewBox="0 0 88 88" className="h-14 w-14 shrink-0" aria-hidden>
-          <circle
-            cx="44"
-            cy="44"
-            r={r}
-            fill="none"
-            className="stroke-neutral-300"
-            strokeWidth="9"
-          />
-          {growthLenses.map((lens) => {
-            const len = (lens.share / 100) * c;
-            const dash = `${len} ${c - len}`;
-            const el = (
-              <circle
-                key={lens.id}
-                cx="44"
-                cy="44"
-                r={r}
-                fill="none"
-                stroke={lens.color}
-                strokeWidth="9"
-                strokeDasharray={dash}
-                strokeDashoffset={-offset}
-                strokeLinecap="butt"
-                transform="rotate(-90 44 44)"
-              />
-            );
-            offset += len;
-            return el;
-          })}
-        </svg>
-        <ul className="min-w-0 flex-1 space-y-0.5">
-          {growthLenses.map((lens) => (
-            <li
-              key={lens.id}
-              className="flex items-center justify-between gap-2 text-[0.65rem] font-semibold text-neutral-700 mobile-sm:text-[0.7rem]"
-            >
-              <span className="inline-flex items-center gap-1.5 truncate">
-                <span
-                  className="h-1.5 w-1.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: lens.color }}
-                />
-                {lens.label}
-              </span>
-              <span className="tabular-nums text-neutral-600">{lens.share}%</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-}
-
-function TrustPulseCard() {
-  return (
-    <div className={cardShell}>
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[0.65rem] font-medium text-neutral-600 mobile-sm:text-[0.7rem]">
-          Operator trust
-        </p>
-        <ShieldCheck className="h-3.5 w-3.5 text-mint" aria-hidden />
-      </div>
-      <div className="mt-1.5 flex items-end gap-2">
-        <p className="font-display text-600 font-bold leading-none text-neutral-900">
-          4.8
-        </p>
-        <div className="flex gap-1 pb-1" aria-label="4.8 out of 5 from reviews">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <span
-              key={i}
-              className={cn(
-                "h-1.5 w-1.5 rounded-full",
-                i < 4 ? "bg-mint" : "bg-mint/30",
-              )}
-            />
-          ))}
-        </div>
-      </div>
-      <p className="mt-1 text-[0.65rem] text-neutral-600 mobile-sm:text-[0.7rem]">
-        From 500+ growth reviews
-      </p>
-      <div className="mt-2.5 flex -space-x-2">
-        {avatarStack.map((src) => (
-          <span
-            key={`trust-${src}`}
-            className="relative h-7 w-7 overflow-hidden rounded-full ring-2 ring-white"
-          >
-            <Image src={src} alt="" fill className="object-cover" sizes="28px" />
-          </span>
-        ))}
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-mint-soft text-[0.6rem] font-bold text-mint ring-2 ring-white">
-          +12
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function FocusCard() {
-  return (
-    <div className={cardShell}>
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[0.65rem] font-medium text-neutral-600 mobile-sm:text-[0.7rem]">
-          Focus this week
-        </p>
-        <span className="rounded-full bg-mint px-2 py-0.5 text-[0.6rem] font-bold text-white">
-          Brand
-        </span>
-      </div>
-      <p className="mt-1.5 font-display text-400 font-bold leading-snug text-neutral-900 mobile-sm:text-500">
-        What is broken first
-      </p>
-      <ul className="mt-2.5 space-y-1.5">
-        {weekFocus.map((item) => (
-          <li
-            key={item.label}
-            className="flex items-center justify-between gap-2 rounded-xl bg-neutral-200/80 px-2.5 py-1.5"
-          >
-            <span className="truncate text-[0.65rem] font-semibold text-neutral-700 mobile-sm:text-[0.7rem]">
-              {item.label}
-            </span>
-            <span
-              className={cn(
-                "shrink-0 rounded-full px-1.5 py-0.5 text-[0.55rem] font-bold uppercase tracking-wide",
-                item.tone === "high" && "bg-mint text-white",
-                item.tone === "med" && "bg-mint-ice text-mint-ink",
-                "bg-white text-neutral-600 ring-1 ring-neutral-400/70",
-              )}
-            >
-              {item.tone}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function LiveBooker() {
-  const now = useLagosNow();
-  const [mounted, setMounted] = useState(false);
-  const days = useMemo(() => getUpcomingDays(now, 3), [now]);
-  const [dayKey, setDayKey] = useState<string | null>(null);
-  const selectedDay = days.find((d) => d.key === dayKey) ?? days[0] ?? null;
-
-  const slots = useMemo(
-    () => (selectedDay ? getOpenSlots(selectedDay.date, now) : []),
-    [selectedDay, now],
-  );
-  const [slotId, setSlotId] = useState<string | null>(null);
+/** Sleek partner pills — AirDrop-style focus that auto-advances. */
+function PartnerPills({ reduce }: { reduce: boolean }) {
+  const [active, setActive] = useState(0);
+  const n = partners.length;
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    if (reduce) return;
 
-  useEffect(() => {
-    if (dayKey === null && days[0]) {
-      setDayKey(days[0].key);
-    } else if (dayKey && !days.some((d) => d.key === dayKey) && days[0]) {
-      setDayKey(days[0].key);
-    }
-  }, [days, dayKey]);
+    const tick = () => {
+      // Pause while the tab is hidden so focus doesn't jump mid-click.
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return;
+      }
+      setActive((prev) => (prev + 1) % n);
+    };
 
-  useEffect(() => {
-    const first = slots[0];
-    if (!first) {
-      setSlotId(null);
-      return;
-    }
-    if (!slotId || !slots.some((s) => s.id === slotId)) {
-      setSlotId(first.id);
-    }
-  }, [slots, slotId]);
+    const id = window.setInterval(tick, 2600);
+    return () => window.clearInterval(id);
+  }, [reduce, n]);
 
-  const liveClock = mounted ? formatLagosClock(now) : "--:--";
+  const pillClass = (isActive: boolean) =>
+    cn(
+      "absolute left-1/2 top-0 inline-flex min-w-[6.5rem] items-center justify-center rounded-full px-4 py-2.5",
+      "font-display text-[0.68rem] font-semibold uppercase tracking-[0.14em] tablet:min-w-[7.1rem] tablet:text-[0.72rem]",
+      "ring-1 backdrop-blur-sm transition-colors",
+      isActive
+        ? "bg-white text-[#3B05C4] shadow-[0_14px_34px_-14px_rgba(22,2,74,0.55)] ring-[#EDE8F7]"
+        : "bg-white/85 text-[#16024A]/75 ring-[#16024A]/10 hover:text-[#16024A]",
+    );
+
+  const pillMotion = (rel: number, abs: number, isActive: boolean) => ({
+    x: `calc(-50% + ${rel * 6.85}rem)`,
+    scale: isActive ? 1.06 : Math.max(0.88, 1 - abs * 0.07),
+    opacity: isActive ? 1 : Math.max(0.42, 1 - abs * 0.26),
+    zIndex: 20 - abs,
+  });
+
+  const pillTransition = reduce
+    ? { duration: 0.2 }
+    : { type: "spring" as const, stiffness: 360, damping: 30, mass: 0.75 };
 
   return (
-    <div className={cardShell}>
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="text-[0.65rem] font-semibold text-neutral-800 mobile-sm:text-[0.7rem]">
-            Strategy call
-          </p>
-          <p className="mt-0.5 text-[0.6rem] font-medium tabular-nums text-mint">
-            Lagos · {liveClock}
-          </p>
-        </div>
-        <Link
-          href={ROUTES.book}
-          className="text-[0.65rem] font-bold uppercase tracking-wide text-mint hover:text-mint-deep"
-        >
-          Book
-        </Link>
-      </div>
+    <div
+      className="relative mx-auto mt-8 h-[3.35rem] w-full max-w-lg overflow-x-clip"
+      role="list"
+      aria-label="Partners"
+    >
+      {partners.map((partner, i) => {
+        const rel = wrapRel(i, active, n);
+        const abs = Math.abs(rel);
+        const isActive = rel === 0;
+        // Keep mounted (hide far pills) so keys stay stable and remount flicker is avoided.
+        const hidden = abs > 2;
 
-      <div className="mt-2.5 flex gap-1.5" role="listbox" aria-label="Pick a day">
-        {days.map((d) => {
-          const active = d.key === selectedDay?.key;
+        const motionProps = {
+          role: "listitem" as const,
+          className: cn(pillClass(isActive), hidden && "pointer-events-none"),
+          initial: false as const,
+          animate: {
+            ...pillMotion(rel, abs, isActive),
+            ...(hidden ? { opacity: 0, scale: 0.8 } : null),
+          },
+          transition: pillTransition,
+          onFocus: () => {
+            if (!hidden) setActive(i);
+          },
+          tabIndex: hidden ? -1 : 0,
+        };
+
+        if (partner.href) {
+          return (
+            <motion.a
+              key={partner.name}
+              {...motionProps}
+              href={hidden ? undefined : partner.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Visit ${partner.name}`}
+              onClick={() => setActive(i)}
+            >
+              {partner.name}
+            </motion.a>
+          );
+        }
+
+        return (
+          <motion.button
+            key={partner.name}
+            {...motionProps}
+            type="button"
+            disabled={hidden}
+            aria-label={`${partner.name} — coming soon`}
+            title="Coming soon"
+            onClick={() => setActive(i)}
+          >
+            {partner.name}
+          </motion.button>
+        );
+      })}
+    </div>
+  );
+}
+
+function wrapRel(i: number, active: number, n: number) {
+  let rel = i - active;
+  const half = Math.floor(n / 2);
+  if (rel > half) rel -= n;
+  if (rel < -half) rel += n;
+  return rel;
+}
+
+function FeatureDeck({ tick, reduce }: { tick: number; reduce: boolean }) {
+  const [active, setActive] = useState(3);
+  const n = cardMeta.length;
+  const dragX = useRef(0);
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+
+  useEffect(() => {
+    if (reduce) return;
+    const id = window.setInterval(() => {
+      setActive((prev) => (prev + 1) % n);
+    }, 4200);
+    return () => window.clearInterval(id);
+  }, [reduce, n]);
+
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    dragX.current = e.clientX;
+  };
+  const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    const delta = e.clientX - dragX.current;
+    if (Math.abs(delta) < 40) return;
+    setActive((prev) => (delta < 0 ? (prev + 1) % n : (prev - 1 + n) % n));
+  };
+
+  // Wider arc spacing + readable face angle
+  const angleStep = isDesktop ? 28 : 42;
+  const xStep = isDesktop ? 38 : 42;
+
+  return (
+    <div className="relative mx-auto mt-14 w-full mobile-sm:mt-16 tablet:mt-20">
+      <div
+        className="relative mx-auto h-[23rem] w-[100vw] touch-pan-y overflow-visible pt-3 [perspective:1200px] mobile-sm:h-[24.5rem] tablet:h-[27rem] laptop:h-[28.5rem]"
+        style={{ marginLeft: "50%", transform: "translateX(-50%)" }}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+      >
+        {cardMeta.map((meta, i) => {
+          const rel = wrapRel(i, active, n);
+          const isCenter = rel === 0;
+          const abs = Math.abs(rel);
+          if (abs > 3) return null;
+
+          const xPct = rel * xStep;
+          const rotateY = -rel * angleStep;
+          const z = isCenter ? 88 : -abs * 70;
+          const scale = isCenter ? 1 : Math.max(0.78, 1 - abs * 0.07);
+          const payloadIndex =
+            (tick - i + flowPayloads.length * 10) % flowPayloads.length;
+
           return (
             <button
-              key={d.key}
+              key={meta.id}
               type="button"
-              role="option"
-              aria-selected={active}
-              onClick={() => setDayKey(d.key)}
+              aria-label={meta.eyebrow}
+              aria-pressed={isCenter}
+              onClick={() => setActive(i)}
               className={cn(
-                "flex flex-1 flex-col items-center rounded-xl px-1 py-1.5 transition-colors",
-                active
-                  ? "bg-mint text-white"
-                  : "bg-neutral-200 text-neutral-600 hover:bg-mint-soft",
+                "absolute left-1/2 top-3 h-[calc(100%-0.75rem)] origin-center overflow-visible",
+                "transition-[transform,opacity,filter] duration-500 ease-out",
+                "w-[58vw] max-w-[16.5rem] tablet:w-[31vw] tablet:max-w-[17.25rem] laptop:w-[18vw] laptop:max-w-[16.5rem]",
               )}
+              style={{
+                transform: `translateX(calc(-50% + ${xPct}%)) rotateY(${rotateY}deg) translateZ(${z}px) scale(${scale})`,
+                zIndex: 40 - abs,
+                opacity: isCenter ? 1 : Math.max(0.45, 0.85 - abs * 0.12),
+                filter: isCenter
+                  ? "none"
+                  : `blur(${Math.min(2 + abs * 2.5, 8)}px) brightness(0.78)`,
+              }}
             >
-              <span className="text-[0.55rem] font-semibold uppercase opacity-80">
-                {d.weekday}
-              </span>
-              <span className="font-display text-400 font-bold leading-none">
-                {d.dayNum}
-              </span>
+              <FeatureCardFace
+                meta={meta}
+                payload={flowPayloads[payloadIndex]!}
+                payloadKey={`${tick}-${i}-${payloadIndex}`}
+                reduce={reduce}
+                showPayload={isDesktop || isCenter}
+                className="h-full"
+              />
             </button>
           );
         })}
       </div>
 
-      <ul className="mt-2 space-y-1">
-        {slots.length === 0 ? (
-          <li className="rounded-xl bg-neutral-200/80 px-2.5 py-2 text-center text-[0.65rem] font-semibold text-neutral-600">
-            No open slots - try another day
-          </li>
-        ) : (
-          slots.slice(0, 3).map((slot) => {
-            const active = slot.id === slotId;
-            return (
-              <li key={slot.id}>
-                <button
-                  type="button"
-                  onClick={() => setSlotId(slot.id)}
-                  className={cn(
-                    "flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-left text-[0.65rem] font-semibold transition-colors mobile-sm:text-[0.7rem]",
-                    active
-                      ? "bg-mint text-white"
-                      : "bg-neutral-200/80 text-neutral-600 hover:bg-mint-soft",
-                  )}
-                >
-                  <span>{slot.label}</span>
-                  {active ? (
-                    <span className="text-[0.55rem] font-bold uppercase tracking-wider opacity-90">
-                      Open
-                    </span>
-                  ) : null}
-                </button>
-              </li>
-            );
-          })
-        )}
-      </ul>
+      <div className="mt-5 flex justify-center gap-1.5">
+        {cardMeta.map((m, i) => (
+          <button
+            key={m.id}
+            type="button"
+            aria-label={`Go to ${m.eyebrow}`}
+            onClick={() => setActive(i)}
+            className={cn(
+              "h-1.5 rounded-full transition-all",
+              i === active ? "w-5 bg-[#3B05C4]" : "w-1.5 bg-[#3B05C4]/25",
+            )}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
-function useLagosNow() {
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
-
-  return now;
-}
-
-function getLagosDateParts(date: Date) {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: LAGOS_TZ,
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(date);
-
-  const get = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((p) => p.type === type)?.value ?? "";
-
-  return {
-    weekday: get("weekday"),
-    day: Number(get("day")),
-    month: get("month"),
-    year: Number(get("year")),
-    hour: Number(get("hour")),
-    minute: Number(get("minute")),
-  };
-}
-
-function formatLagosClock(date: Date) {
-  return new Intl.DateTimeFormat("en-GB", {
-    timeZone: LAGOS_TZ,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date);
-}
-
-function startOfLagosDay(base: Date, dayOffset: number) {
-  const probe = new Date(base.getTime() + dayOffset * 86_400_000);
-  const pp = getLagosDateParts(probe);
-  return {
-    key: `${pp.year}-${pp.month}-${pp.day}`,
-    weekday: pp.weekday.slice(0, 3),
-    dayNum: pp.day,
-    month: pp.month,
-    year: pp.year,
-    date: probe,
-    parts: pp,
-  };
-}
-
-function getUpcomingDays(now: Date, count: number) {
-  const days = [];
-  for (let i = 0; i < count; i += 1) {
-    days.push(startOfLagosDay(now, i));
-  }
-  return days;
-}
-
-function getOpenSlots(dayDate: Date, now: Date) {
-  const dayParts = getLagosDateParts(dayDate);
-  const nowParts = getLagosDateParts(now);
-  const isToday =
-    dayParts.year === nowParts.year &&
-    dayParts.month === nowParts.month &&
-    dayParts.day === nowParts.day;
-
-  return SLOT_HOURS.filter((hour) => {
-    if (!isToday) return true;
-    const slotMinutes = hour * 60;
-    const nowMinutes = nowParts.hour * 60 + nowParts.minute;
-    return slotMinutes >= nowMinutes + 45;
-  }).map((hour) => {
-    const end = hour + 1;
-    const label = `${String(hour).padStart(2, "0")}:00 - ${String(end).padStart(2, "0")}:00`;
-    return {
-      id: `${dayParts.year}-${dayParts.month}-${dayParts.day}-${hour}`,
-      label,
-      hour,
-    };
-  });
-}
-
-function CallRipple() {
+function FeatureCardFace({
+  meta,
+  payload,
+  payloadKey,
+  reduce,
+  showPayload,
+  className,
+}: {
+  meta: (typeof cardMeta)[number];
+  payload: FlowPayload;
+  payloadKey: string;
+  reduce: boolean;
+  showPayload: boolean;
+  className?: string;
+}) {
   return (
-    <span className="relative flex h-[4.25rem] w-[4.25rem] items-center justify-center mobile-sm:h-[4.75rem] mobile-sm:w-[4.75rem] tablet:h-20 tablet:w-20">
-      <span
-        aria-hidden
-        className="absolute inset-[12%] animate-ping rounded-full bg-mint/30"
-        style={{ animationDuration: "2s" }}
+    <article
+      className={cn(
+        "relative flex h-full flex-col overflow-hidden rounded-[1.35rem] ring-1 ring-black/10",
+        "bg-[#16024A] shadow-[0_24px_50px_-30px_rgba(22,2,74,0.55)]",
+        "tablet:rounded-[1.5rem]",
+        className,
+      )}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={meta.image}
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover"
+        draggable={false}
       />
-      <span
+      <div
         aria-hidden
-        className="absolute inset-[6%] animate-pulse rounded-full border-2 border-mint/45"
+        className="absolute inset-0 bg-gradient-to-b from-[#0B021F]/35 via-[#0B021F]/15 to-[#0B021F]/90"
       />
-      <span aria-hidden className="absolute inset-0 rounded-full border border-mint/25" />
-      <span
-        aria-hidden
-        className="border-mint/12 absolute inset-[-8px] rounded-full border"
-      />
-      <span className="relative flex h-12 w-12 items-center justify-center rounded-full bg-white text-mint shadow-[0_14px_36px_-10px_rgba(37,99,235,0.55)] ring-1 ring-mint-ice transition-colors group-hover:bg-mint group-hover:text-white tablet:h-14 tablet:w-14">
-        <Phone className="h-5 w-5 tablet:h-6 tablet:w-6" aria-hidden />
-      </span>
-    </span>
+
+      {/* Upper chip — centered in the image zone; bounce stays inside the card */}
+      <div className="relative z-10 flex min-h-[9.5rem] flex-1 items-center justify-center px-3 py-4 tablet:min-h-[11rem]">
+        <AnimatePresence mode="wait" initial={false}>
+          {showPayload ? (
+            <motion.div
+              key={payloadKey}
+              initial={reduce ? false : { opacity: 0, y: 16, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={reduce ? undefined : { opacity: 0, y: 10, scale: 0.94 }}
+              transition={
+                reduce
+                  ? { duration: 0.2 }
+                  : { type: "spring", stiffness: 380, damping: 18, mass: 0.7 }
+              }
+              className="mx-auto flex w-full max-w-[94%] justify-center"
+            >
+              <motion.div
+                animate={reduce ? undefined : { y: [0, -5, 0] }}
+                transition={
+                  reduce
+                    ? undefined
+                    : {
+                        duration: 2.2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: 0.4,
+                      }
+                }
+              >
+                <PayloadChip payload={payload} />
+              </motion.div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </div>
+
+      <div className="relative z-10 shrink-0 bg-[#0B021F]/80 px-3.5 pb-3 pt-2 backdrop-blur-sm">
+        <p className="text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-[#C8F5E4]">
+          {meta.eyebrow}
+        </p>
+        <p className="mt-1 line-clamp-2 text-[0.78rem] font-semibold leading-snug text-white">
+          {meta.body}
+        </p>
+      </div>
+    </article>
+  );
+}
+
+function PayloadChip({ payload }: { payload: FlowPayload }) {
+  if (payload.kind === "easy") {
+    return (
+      <div className="w-[11.5rem] rounded-2xl bg-white p-2 shadow-[0_14px_32px_-12px_rgba(22,2,74,0.5)] ring-1 ring-[#EDE8F7]">
+        <div className="flex items-center gap-2 rounded-xl bg-[#F7F5FC] px-2 py-1.5">
+          <span className="grid h-7 w-7 place-items-center rounded-full bg-[#3B05C4] text-white">
+            <Calendar className="h-3 w-3" aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-[0.72rem] font-semibold text-[#16024A]">
+              {payload.title}
+            </p>
+            <p className="truncate text-[0.58rem] text-neutral-600">{payload.meta}</p>
+          </div>
+        </div>
+        <span className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-full bg-[#16024A] py-1.5 text-[0.68rem] font-semibold text-white">
+          Start now
+          <ArrowRight className="h-3 w-3" aria-hidden />
+        </span>
+      </div>
+    );
+  }
+
+  if (payload.kind === "listen") {
+    return (
+      <div className="w-[12rem] rounded-[1.15rem] bg-white p-2.5 shadow-[0_14px_32px_-12px_rgba(22,2,74,0.5)] ring-1 ring-[#EDE8F7]">
+        <div className="flex items-start gap-2">
+          <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#F4F0FF] text-[0.58rem] font-bold text-[#3B05C4]">
+            XP
+          </span>
+          <div className="min-w-0">
+            <p className="text-[0.72rem] font-semibold leading-snug text-[#16024A]">
+              {payload.quote}
+            </p>
+            <p className="mt-0.5 text-[0.58rem] text-neutral-600">{payload.who}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return <SleekGraphSlide label={payload.label} value={payload.value} points={payload.points} />;
+}
+
+/** Sleek area/line chart — not basic bars */
+function SleekGraphSlide({
+  label,
+  value,
+  points,
+}: {
+  label: string;
+  value: string;
+  points: readonly number[];
+}) {
+  const uid = useId().replace(/:/g, "");
+  const fillId = `sleekFill-${uid}`;
+  const strokeId = `sleekStroke-${uid}`;
+  const glowId = `sleekGlow-${uid}`;
+
+  const w = 200;
+  const h = 64;
+  const pad = 6;
+  const min = Math.min(...points);
+  const max = Math.max(...points);
+  const range = Math.max(max - min, 1);
+
+  const coords = points.map((p, i) => {
+    const x = pad + (i / (points.length - 1)) * (w - pad * 2);
+    const y = h - pad - ((p - min) / range) * (h - pad * 2 - 4);
+    return { x, y };
+  });
+
+  const line = coords
+    .map((c, i) => `${i === 0 ? "M" : "L"} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`)
+    .join(" ");
+
+  const area = `${line} L ${coords[coords.length - 1]!.x} ${h} L ${coords[0]!.x} ${h} Z`;
+  const tip = coords[coords.length - 2] ?? coords[coords.length - 1]!;
+
+  return (
+    <div className="w-[11.75rem] overflow-hidden rounded-2xl bg-white p-2.5 shadow-[0_14px_32px_-12px_rgba(22,2,74,0.5)] ring-1 ring-[#EDE8F7]">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate text-[0.58rem] font-medium text-neutral-600">{label}</p>
+          <p className="font-display text-[1.05rem] font-bold leading-none tracking-tight text-[#16024A]">
+            {value}
+          </p>
+        </div>
+        <span className="shrink-0 rounded-full bg-[#E8F8EF] px-1.5 py-0.5 text-[0.55rem] font-semibold text-[#027A48]">
+          +18%
+        </span>
+      </div>
+
+      <div className="relative mt-1.5">
+        <svg viewBox={`0 0 ${w} ${h}`} className="h-12 w-full" aria-hidden>
+          <defs>
+            <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#3B05C4" stopOpacity="0.35" />
+              <stop offset="55%" stopColor="#3B05C4" stopOpacity="0.08" />
+              <stop offset="100%" stopColor="#3B05C4" stopOpacity="0" />
+            </linearGradient>
+            <linearGradient id={strokeId} x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#5B45FF" />
+              <stop offset="100%" stopColor="#3B05C4" />
+            </linearGradient>
+            <filter id={glowId} x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="2.5" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          {[0.25, 0.5, 0.75].map((t) => (
+            <line
+              key={t}
+              x1={pad}
+              x2={w - pad}
+              y1={pad + t * (h - pad * 2)}
+              y2={pad + t * (h - pad * 2)}
+              stroke="#EDE8F7"
+              strokeWidth="1"
+            />
+          ))}
+
+          <motion.path
+            d={area}
+            fill={`url(#${fillId})`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          />
+          <motion.path
+            d={line}
+            fill="none"
+            stroke={`url(#${strokeId})`}
+            strokeWidth="2.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            filter={`url(#${glowId})`}
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 0.85, ease }}
+          />
+
+          <circle cx={tip.x} cy={tip.y} r="6" fill="#3B05C4" fillOpacity="0.18" />
+          <circle cx={tip.x} cy={tip.y} r="3.25" fill="#3B05C4" stroke="white" strokeWidth="1.5" />
+        </svg>
+      </div>
+    </div>
   );
 }

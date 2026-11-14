@@ -79,8 +79,8 @@ export function SolteraHero({
 
   return (
     <section className="bg-white text-[#16024A]">
-      <div className="px-4 py-14 tablet:px-8 tablet:py-20">
-        <div className="text-center">
+      <div className="py-14 tablet:px-8 tablet:py-20">
+        <div className="mx-auto w-[98%] text-center tablet:w-full">
           <p className="inline-flex rounded-full border border-[#3B05C4]/20 bg-[#F4F0FF] px-3 py-1 font-display text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[#3B05C4]">
             {eyebrow}
           </p>
@@ -93,7 +93,7 @@ export function SolteraHero({
             {title}
           </motion.h1>
         </div>
-        <div className="mt-10 grid items-center gap-12 tablet:grid-cols-[1.05fr_0.95fr]">
+        <div className="mx-auto mt-10 grid w-[98%] items-center gap-12 tablet:w-full tablet:grid-cols-[1.05fr_0.95fr]">
         <div className="text-center">
           <p className="mx-auto max-w-xl text-[1.02rem] leading-relaxed text-neutral-600">{description}</p>
           {(primaryHref || secondaryHref) && (
@@ -402,9 +402,9 @@ export function SolteraCloser({
 
   return (
     <section className="bg-white">
-      <div className="px-4 py-8 tablet:px-8 tablet:py-12">
+      <div className="py-8 tablet:px-8 tablet:py-12">
         <motion.div
-          className="rounded-[2rem] border border-[#3B05C4]/10 bg-[#F7F4FF] px-6 py-12 text-center text-[#16024A] tablet:px-12 tablet:py-16"
+          className="mx-auto w-[98%] rounded-[2rem] border border-[#3B05C4]/10 bg-[#F7F4FF] px-4 py-10 text-center text-[#16024A] mobile-sm:px-6 mobile-sm:py-12 tablet:w-full tablet:px-12 tablet:py-16"
           initial={reduce ? false : { opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-10% 0px" }}
@@ -413,21 +413,23 @@ export function SolteraCloser({
           <p className="font-display text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#3B05C4]">
             {siteConfig.name}
           </p>
-          <h2 className="mt-4 font-display text-[clamp(2rem,4.5vw,3.4rem)] font-bold leading-[1.15] tracking-tight">
+          <h2 className="mt-4 whitespace-nowrap font-display text-[length:clamp(0.9rem,calc((100vw-5rem)/14.5),3.4rem)] font-bold leading-[1.15] tracking-[-0.03em]">
             {title}
           </h2>
-          <p className="mx-auto mt-4 max-w-xl text-[1rem] leading-relaxed text-neutral-600">{copy}</p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <p className="mx-auto mt-4 max-w-xl text-[0.95rem] leading-relaxed text-neutral-600 mobile-sm:text-[1rem]">
+            {copy}
+          </p>
+          <div className="mt-8 flex w-full flex-col gap-3 mobile-sm:flex-row mobile-sm:flex-wrap mobile-sm:justify-center">
             <Link
               href={primaryHref}
-              className="inline-flex min-h-12 items-center gap-2 whitespace-nowrap rounded-full bg-[#3B05C4] px-5 text-[0.9rem] font-semibold text-white hover:bg-[#2C0494]"
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[#3B05C4] px-5 text-[0.9rem] font-semibold text-white hover:bg-[#2C0494] mobile-sm:w-auto"
             >
               {primaryLabel}
               <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
             <Link
               href={secondaryHref}
-              className="inline-flex min-h-12 items-center whitespace-nowrap rounded-full border border-[#16024A]/15 bg-white px-5 text-[0.9rem] font-semibold text-[#16024A]"
+              className="inline-flex min-h-12 w-full items-center justify-center whitespace-nowrap rounded-full border border-[#16024A]/15 bg-white px-5 text-[0.9rem] font-semibold text-[#16024A] mobile-sm:w-auto"
             >
               {secondaryLabel}
             </Link>

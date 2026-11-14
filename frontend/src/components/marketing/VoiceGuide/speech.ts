@@ -152,7 +152,14 @@ export async function ensureMicrophoneAccess(): Promise<MicAccessResult> {
   return "granted";
 }
 
-export function preferredRecognitionLang() {
+export function preferredRecognitionLang(locale?: string) {
+  if (locale === "fr") return "fr-FR";
+  if (locale === "zh") return "zh-CN";
+  if (locale === "ig") return "ig-NG";
+  if (locale === "yo") return "yo-NG";
+  if (locale === "ha") return "ha-NG";
+  if (locale === "pcm" || locale === "en") return "en-NG";
+
   if (typeof navigator === "undefined") return "en-NG";
   const langs = navigator.languages?.length
     ? [...navigator.languages]
@@ -163,6 +170,8 @@ export function preferredRecognitionLang() {
   if (/en-ke|kenya/.test(joined)) return "en-KE";
   if (/en-za|south africa/.test(joined)) return "en-ZA";
   if (/en-gb|en-uk/.test(joined)) return "en-GB";
+  if (/^fr/.test(joined)) return "fr-FR";
+  if (/zh|chinese/.test(joined)) return "zh-CN";
   return "en-NG";
 }
 
@@ -233,9 +242,39 @@ function clearActiveAudio() {
   }
 }
 
+function pickVoiceForLocale(
+  voices: SpeechSynthesisVoice[],
+  locale?: string,
+): SpeechSynthesisVoice | null {
+  if (!voices.length) return null;
+  const lang = preferredRecognitionLang(locale).toLowerCase();
+  const prefix = lang.split("-")[0] ?? "en";
+
+  const scored = voices
+    .map((voice) => {
+      const hay = `${voice.lang} ${voice.name}`.toLowerCase();
+      let score = 0;
+      if (hay.startsWith(lang) || voice.lang.toLowerCase() === lang) score += 100;
+      else if (voice.lang.toLowerCase().startsWith(prefix)) score += 70;
+      else if (hay.includes(prefix)) score += 40;
+      else return { voice, score: -1 };
+
+      if (locale === "en" || locale === "pcm" || !locale) {
+        score += pickAfricanVoice([voice]) ? 20 : 0;
+      }
+      return { voice, score };
+    })
+    .filter((row) => row.score >= 0)
+    .sort((a, b) => b.score - a.score);
+
+  return scored[0]?.voice ?? (locale === "en" || locale === "pcm" || !locale
+    ? pickAfricanVoice(voices)
+    : null);
+}
+
 function speakBrowserFallback(
   text: string,
-  opts?: { muted?: boolean; onEnd?: () => void },
+  opts?: { muted?: boolean; onEnd?: () => void; locale?: string },
 ) {
   if (typeof window === "undefined" || !window.speechSynthesis) {
     opts?.onEnd?.();
@@ -249,16 +288,19 @@ function speakBrowserFallback(
   }
 
   const utter = new SpeechSynthesisUtterance(text);
-  utter.rate = 0.98;
-  utter.pitch = 0.9;
-  utter.lang = "en-NG";
+  utter.rate = 0.96;
+  utter.pitch = 0.95;
+  utter.lang = preferredRecognitionLang(opts?.locale);
 
   const applyVoice = () => {
-    const voice = pickAfricanVoice(window.speechSynthesis.getVoices());
+    const voice = pickVoiceForLocale(
+      window.speechSynthesis.getVoices(),
+      opts?.locale,
+    );
     if (voice) {
       utter.voice = voice;
-      utter.lang = voice.lang || "en-NG";
-      utter.pitch = voiceGender(voice) === "male" ? 0.92 : 0.82;
+      utter.lang = voice.lang || preferredRecognitionLang(opts?.locale);
+      utter.pitch = voiceGender(voice) === "male" ? 0.92 : 1;
     }
   };
 
@@ -275,12 +317,12 @@ function speakBrowserFallback(
 }
 
 /**
- * Speak with a real male Nigerian neural voice (Abeo) via /api/voice-guide/speak.
- * Falls back to browser speechSynthesis only if the neural voice request fails.
+ * Speak fluently in the selected language via /api/voice-guide/speak.
+ * Falls back to a locale-matched browser voice if neural TTS fails.
  */
 export function speakText(
   text: string,
-  opts?: { muted?: boolean; onEnd?: () => void },
+  opts?: { muted?: boolean; onEnd?: () => void; locale?: string },
 ) {
   if (typeof window === "undefined") {
     opts?.onEnd?.();
@@ -294,13 +336,14 @@ export function speakText(
   }
 
   const generation = ++speakGeneration;
+  const locale = opts?.locale || "en";
 
   void (async () => {
     try {
       const res = await fetch("/api/voice-guide/speak", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, locale }),
       });
 
       if (generation !== speakGeneration) return;

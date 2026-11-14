@@ -161,16 +161,18 @@ export function ServicesFrames() {
         </FramePage>
       </FrameColumns>
 
-      <div className="mt-5 overflow-hidden rounded-[1.6rem] bg-white shadow-[0_24px_60px_-36px_rgba(22,2,74,0.35)]">
-        <StudioCarousel
-          title="Deep pages for each engagement type."
-          description="Taglines, deliverables, and fit notes live on each service URL."
-          items={list.map((service) => ({
-            title: service.name,
-            body: `${service.tagline} ${service.deliverables.slice(0, 3).join(" · ")}`,
-            href: `/services/${service.slug}`,
-          }))}
-        />
+      <div className="pb-8 tablet:px-8">
+        <div className="mx-auto mt-5 w-[98%] overflow-hidden rounded-[1.6rem] bg-white shadow-[0_24px_60px_-36px_rgba(22,2,74,0.35)] tablet:w-full">
+          <StudioCarousel
+            title="Deep pages for each engagement type."
+            description="Taglines, deliverables, and fit notes live on each service URL."
+            items={list.map((service) => ({
+              title: service.name,
+              body: `${service.tagline} ${service.deliverables.slice(0, 3).join(" · ")}`,
+              href: `/services/${service.slug}`,
+            }))}
+          />
+        </div>
       </div>
     </FrameStage>
   );

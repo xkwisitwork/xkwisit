@@ -206,7 +206,7 @@ export function FrameHero({
   return (
     <div className="bg-white">
       {nav}
-      <Reveal className="mx-auto max-w-3xl px-4 pb-2 pt-8 text-center tablet:px-8 tablet:pt-14">
+      <Reveal className="mx-auto w-[98%] max-w-3xl pb-2 pt-8 text-center tablet:w-full tablet:px-8 tablet:pt-14">
         {eyebrow ? (
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[#5C5478]">{eyebrow}</p>
         ) : null}
@@ -235,8 +235,8 @@ export function FrameHero({
         ) : null}
       </Reveal>
       {hasStage ? (
-        <div className="px-4 pb-10 pt-8 tablet:px-8 tablet:pb-14 tablet:pt-10">
-          <div className="relative mx-auto max-w-5xl overflow-hidden rounded-[1.6rem] bg-white tablet:rounded-[2rem]">
+        <div className="pb-10 pt-8 tablet:px-8 tablet:pb-14 tablet:pt-10">
+          <div className="relative mx-auto w-[98%] max-w-5xl overflow-hidden rounded-[1.6rem] bg-white tablet:w-full tablet:rounded-[2rem]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={image}
@@ -380,31 +380,33 @@ export function SplitFeature({
 
   return (
     <Reveal>
-      <section className="w-full px-4 py-12 tablet:px-8 tablet:py-16">
-        <div className={hasAside ? "grid w-full items-start gap-6 tablet:grid-cols-2" : "w-full"}>
-          <div className="min-w-0">
-            {eyebrow ? (
-              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[#5C5478]">— {eyebrow}</p>
-            ) : null}
-            <h2 className="mt-2 w-full text-balance font-display text-[clamp(1.55rem,3.4vw,2.45rem)] font-bold leading-[1.12]">
-              {title}
-            </h2>
-          </div>
-          {hasAside ? (
-            <div className="min-w-0 space-y-3">
-              {body ? <p className="text-[0.98rem] leading-relaxed text-[#2A2348]">{body}</p> : null}
-              {notes && notes.length > 0 ? <NoteStack notes={notes} /> : null}
+      <section className="w-full py-12 tablet:px-8 tablet:py-16">
+        <div className="mx-auto w-[98%] tablet:w-full">
+          <div className={hasAside ? "grid w-full items-start gap-6 tablet:grid-cols-2" : "w-full"}>
+            <div className="min-w-0 text-center tablet:text-left">
+              {eyebrow ? (
+                <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[#5C5478]">— {eyebrow}</p>
+              ) : null}
+              <h2 className="mt-2 w-full text-balance font-display text-[clamp(1.55rem,3.4vw,2.45rem)] font-bold leading-[1.12]">
+                {title}
+              </h2>
             </div>
-          ) : null}
+            {hasAside ? (
+              <div className="min-w-0 space-y-3">
+                {body ? <p className="text-[0.98rem] leading-relaxed text-[#2A2348]">{body}</p> : null}
+                {notes && notes.length > 0 ? <NoteStack notes={notes} /> : null}
+              </div>
+            ) : null}
+          </div>
+          <Stagger
+            className={`mt-8 grid gap-4 ${list.length > 2 ? "tablet:grid-cols-2 laptop:grid-cols-3" : "tablet:grid-cols-2"}`}
+            itemClassName="min-w-0 h-full"
+          >
+            {list.map((card, index) => (
+              <RichCardView key={`${card.title}-${index}`} card={card} index={index} />
+            ))}
+          </Stagger>
         </div>
-        <Stagger
-          className={`mt-8 grid gap-4 ${list.length > 2 ? "tablet:grid-cols-2 laptop:grid-cols-3" : "tablet:grid-cols-2"}`}
-          itemClassName="min-w-0 h-full"
-        >
-          {list.map((card, index) => (
-            <RichCardView key={`${card.title}-${index}`} card={card} index={index} />
-          ))}
-        </Stagger>
       </section>
     </Reveal>
   );
@@ -431,7 +433,8 @@ export function FeatureBlock({
 }) {
   return (
     <Reveal>
-      <section className="px-4 py-14 text-center tablet:px-8 tablet:py-20">
+      <section className="py-14 text-center tablet:px-8 tablet:py-20">
+        <div className="mx-auto w-[98%] tablet:w-full">
         <h2 className="mx-auto max-w-3xl text-balance font-display text-[clamp(1.7rem,4.2vw,2.75rem)] font-bold leading-[1.12]">
           {heading}
         </h2>
@@ -474,6 +477,7 @@ export function FeatureBlock({
             className="mx-auto mt-8 h-52 w-full max-w-4xl rounded-[1.75rem] object-cover tablet:h-72"
           />
         ) : null}
+        </div>
       </section>
     </Reveal>
   );
@@ -534,8 +538,8 @@ export function ProofBand({
 
   return (
     <Reveal>
-      <section className="w-full px-4 py-12 tablet:px-8 tablet:py-16">
-        <div className="mx-auto w-full max-w-6xl">
+      <section className="w-full py-12 tablet:px-8 tablet:py-16">
+        <div className="mx-auto w-[98%] max-w-6xl tablet:w-full">
           {/* Peer bento — title, signals, and media as equal tiles (no left rail) */}
           <div className="grid grid-cols-1 gap-3 tablet:grid-cols-2 laptop:grid-cols-3">
             <Bounce className="min-w-0">
@@ -795,7 +799,8 @@ export function ClosingPair({
 }) {
   return (
     <Reveal>
-      <section className="px-4 py-14 tablet:px-8 tablet:py-20">
+      <section className="py-14 tablet:px-8 tablet:py-20">
+        <div className="mx-auto w-[98%] tablet:w-full">
         {eyebrow ? (
           <p className="text-center text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[#5C5478]">
             {eyebrow}
@@ -867,6 +872,7 @@ export function ClosingPair({
             );
           })}
         </Stagger>
+        </div>
       </section>
     </Reveal>
   );
@@ -943,26 +949,30 @@ export function ClosingBand({
 }) {
   return (
     <div
-      className={`grid items-center gap-4 bg-[#F7F4FF] px-4 py-10 tablet:grid-cols-[1fr_0.7fr] tablet:px-8 tablet:py-14 ${
+      className={`bg-[#F7F4FF] py-10 tablet:px-8 tablet:py-14 ${
         grow ? "mt-auto flex-1" : ""
       }`}
     >
-      <div className="min-w-0">
-        <h2 className="text-balance font-display text-[clamp(1.45rem,3vw,2.1rem)] font-bold leading-[1.15]">{title}</h2>
-        {body ? <p className="mt-3 max-w-xl text-[0.92rem] leading-relaxed text-[#2A2348]">{body}</p> : null}
-        <div className="mt-5 flex flex-wrap gap-2">
-          <FramePill href={primaryHref}>{primaryLabel}</FramePill>
-          {secondaryHref && secondaryLabel ? (
-            <FramePill href={secondaryHref} tone="ghost">
-              {secondaryLabel}
-            </FramePill>
-          ) : null}
+      <div
+        className={`mx-auto grid w-[98%] items-center gap-4 tablet:w-full tablet:grid-cols-[1fr_0.7fr]`}
+      >
+        <div className="min-w-0">
+          <h2 className="text-balance font-display text-[clamp(1.45rem,3vw,2.1rem)] font-bold leading-[1.15]">{title}</h2>
+          {body ? <p className="mt-3 max-w-xl text-[0.92rem] leading-relaxed text-[#2A2348]">{body}</p> : null}
+          <div className="mt-5 flex flex-wrap gap-2">
+            <FramePill href={primaryHref}>{primaryLabel}</FramePill>
+            {secondaryHref && secondaryLabel ? (
+              <FramePill href={secondaryHref} tone="ghost">
+                {secondaryLabel}
+              </FramePill>
+            ) : null}
+          </div>
         </div>
+        {image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={image} alt="" className="h-36 w-full rounded-[1.2rem] object-cover" />
+        ) : null}
       </div>
-      {image ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={image} alt="" className="h-36 w-full rounded-[1.2rem] object-cover" />
-      ) : null}
     </div>
   );
 }

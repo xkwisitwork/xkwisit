@@ -159,8 +159,8 @@ export function FaqSection() {
 
   return (
     <section id="faq" className="relative bg-white">
-      <Container className="relative px-4 py-16 mobile-sm:px-5 tablet:px-8 tablet:py-20">
-        <div className="mx-auto max-w-2xl text-center">
+      <Container bare className="relative w-full py-16 tablet:px-8 tablet:py-20">
+        <div className="mx-auto max-w-2xl px-4 text-center mobile-sm:px-5 tablet:px-0">
           <p className="font-display text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-mint">
             FAQ
           </p>
@@ -170,19 +170,19 @@ export function FaqSection() {
           <p className="mx-auto mt-4 max-w-md text-[0.95rem] leading-relaxed text-neutral-600">
             Cost, timing, access, refunds, and how we work with your team.
           </p>
-          <label className="mx-auto mt-6 flex max-w-sm items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-2 text-left shadow-[0_10px_24px_-20px_rgba(22,2,74,0.45)]">
-            <Search className="h-4 w-4 shrink-0 text-[#5B45FF]" aria-hidden />
+          <label className="mx-auto mt-6 flex h-12 w-full max-w-md cursor-text items-center gap-3 overflow-hidden rounded-full border-2 border-[#16024A] bg-white px-5 text-left shadow-[0_10px_24px_-18px_rgba(22,2,74,0.35)] transition focus-within:border-mint">
+            <Search className="h-4 w-4 shrink-0 text-[#16024A]" aria-hidden />
             <span className="sr-only">Search a question</span>
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search a question"
-              className="min-w-0 flex-1 bg-transparent text-[0.85rem] text-[#16024A] outline-none placeholder:text-neutral-600"
+              className="h-full min-w-0 flex-1 appearance-none rounded-none border-0 bg-transparent p-0 text-[0.9rem] text-[#16024A] shadow-none outline-none ring-0 placeholder:text-[#5B5280] focus:border-0 focus:outline-none focus:ring-0"
             />
           </label>
         </div>
 
-        <div className="relative mx-auto mt-10 max-w-6xl overflow-hidden rounded-[1.75rem] bg-[#16024A] px-4 py-6 text-white shadow-[0_32px_70px_-40px_rgba(22,2,74,0.65)] mobile-sm:rounded-[2rem] mobile-sm:px-6 mobile-sm:py-8 tablet:mt-12 tablet:px-8 tablet:py-10 laptop:px-10 laptop:py-12">
+        <div className="relative mx-auto mt-10 w-[98%] max-w-6xl overflow-hidden rounded-[1.75rem] bg-[#16024A] px-4 pb-6 pt-10 text-white shadow-[0_32px_70px_-40px_rgba(22,2,74,0.65)] mobile-sm:rounded-[2rem] mobile-sm:px-6 mobile-sm:pb-8 mobile-sm:pt-12 tablet:mt-12 tablet:w-full tablet:px-8 tablet:pb-10 tablet:pt-12 laptop:px-10 laptop:pb-12 laptop:pt-14">
           <p
             aria-hidden
             className="pointer-events-none absolute -bottom-6 right-4 font-display text-[clamp(4.5rem,12vw,9rem)] font-bold leading-none tracking-tight text-white/[0.04]"
@@ -294,7 +294,7 @@ function CardStack({
   const behind = [1, 2].map((offset) => faqs[(activeIndex + offset) % faqs.length]!);
 
   return (
-    <div className="relative mx-auto h-[300px] w-full max-w-[320px] mobile-sm:h-[320px]">
+    <div className="relative mx-auto h-[320px] w-full max-w-[320px] pt-8 mobile-sm:h-[340px]">
       {behind
         .slice()
         .reverse()
@@ -304,7 +304,7 @@ function CardStack({
             <div
               key={`${card.q}-back`}
               aria-hidden
-              className="absolute left-0 top-0 h-[280px] w-[86%] rounded-[1.25rem] border border-white/70 bg-white/85 shadow-[0_16px_30px_-24px_rgba(0,0,0,0.6)]"
+              className="absolute left-0 top-8 h-[280px] w-[86%] rounded-[1.25rem] border border-white/70 bg-white/85 shadow-[0_16px_30px_-24px_rgba(0,0,0,0.6)]"
               style={{
                 transform: `translate(${depth * 16}px, ${depth * -10}px) rotate(${depth * -3.5}deg)`,
               }}
@@ -318,7 +318,7 @@ function CardStack({
           animate={{ opacity: 1, y: 0 }}
           exit={reduce ? undefined : { opacity: 0, y: -8 }}
           transition={{ duration: 0.28 }}
-          className="absolute left-0 top-4 flex h-[280px] w-[86%] flex-col rounded-[1.25rem] bg-white p-4 text-[#16024A] shadow-[0_22px_40px_-24px_rgba(0,0,0,0.55)] mobile-sm:p-5"
+          className="absolute left-0 top-12 flex h-[280px] w-[86%] flex-col rounded-[1.25rem] bg-white p-4 text-[#16024A] shadow-[0_22px_40px_-24px_rgba(0,0,0,0.55)] mobile-sm:p-5"
         >
           <div className="flex items-center justify-between gap-2">
             <p className="font-display text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-neutral-600">
