@@ -62,11 +62,11 @@ export function AuthHeroPanel({ mode }: { mode: "login" | "register" }) {
       ) : (
         <>
           <Image
-            src="/images/people/desk-review.jpg"
-            alt="Xkwisit team reviewing the Monday growth number"
+            src="/images/auth/register-team.jpg"
+            alt="Team reviewing growth milestones together"
             fill
             priority
-            className="object-cover object-[50%_30%]"
+            className="object-cover object-center"
             sizes="(min-width: 1024px) 55vw, 100vw"
           />
           <div
