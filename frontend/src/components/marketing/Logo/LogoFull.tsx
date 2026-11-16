@@ -29,7 +29,14 @@ export function LogoFull({
     </span>
   );
 
-  if (!href) return content;
+  // Empty string disables the home link (e.g. authenticated app shell).
+  if (!href) {
+    return (
+      <span className="inline-flex shrink-0" aria-label="Xkwisit">
+        {content}
+      </span>
+    );
+  }
 
   return (
     <Link

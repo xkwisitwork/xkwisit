@@ -15,6 +15,7 @@ import {
   Cog,
   FileBarChart,
   FileText,
+  Footprints,
   Gauge,
   GraduationCap,
   Handshake,
@@ -102,6 +103,12 @@ export const appNavSections: AppNavSection[] = [
             label: "System health",
             href: "/platform/health",
             icon: Activity,
+          },
+          {
+            id: "platform-activity",
+            label: "Visitor activity",
+            href: "/platform/activity",
+            icon: Footprints,
           },
           {
             id: "platform-audit",
@@ -417,7 +424,7 @@ export const appNavSections: AppNavSection[] = [
           },
           {
             id: "analytics-sheet-downloads",
-            label: "Growth sheet leads",
+            label: "PDF download leads",
             href: "/sheet-downloads",
             icon: FileText,
           },

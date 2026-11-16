@@ -38,7 +38,8 @@ export default function AppError({
         <Button
           variant="contained"
           size="md"
-          leftIcon={<RefreshCw className="h-4 w-4" />}
+          className="!bg-mint !text-white hover:!bg-mint-deep"
+          leftIcon={<RefreshCw className="h-4 w-4" aria-hidden />}
           onClick={reset}
         >
           Try again

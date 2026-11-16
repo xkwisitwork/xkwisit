@@ -17,6 +17,7 @@ import {
   badRequest,
   conflict,
   notFound,
+  sessionSuperseded,
   tooManyRequests,
   unauthorized,
 } from "../../utils/errors.js";
@@ -79,7 +80,7 @@ async function resolvePlatformAdmin(
 }
 
 const MAX_FAILED_ATTEMPTS = 3;
-const LOCKOUT_STEP_MS = 5 * 60 * 1000; // 5 minutes, then 10, 15, …
+const LOCKOUT_MS = 5 * 60 * 1000; // 5 minutes after 3 failed passwords
 
 function isLocked(user: { lockUntil?: Date | null }) {
   return Boolean(user.lockUntil && user.lockUntil.getTime() > Date.now());
@@ -87,8 +88,15 @@ function isLocked(user: { lockUntil?: Date | null }) {
 
 function lockMessage(lockUntil: Date) {
   const ms = Math.max(0, lockUntil.getTime() - Date.now());
-  const mins = Math.ceil(ms / 60_000);
-  return `Account locked due to too many failed attempts. Try again in about ${mins} minute${mins === 1 ? "" : "s"}.`;
+  const mins = Math.max(1, Math.ceil(ms / 60_000));
+  return `Account locked after 3 failed password attempts. Try again in ${mins} minute${mins === 1 ? "" : "s"}.`;
+}
+
+function lockDetails(lockUntil: Date) {
+  return [
+    { field: "remainingAttempts", message: "0" },
+    { field: "lockUntil", message: lockUntil.toISOString() },
+  ];
 }
 
 async function recordFailedLogin(user: InstanceType<typeof User>) {
@@ -96,18 +104,18 @@ async function recordFailedLogin(user: InstanceType<typeof User>) {
   user.failedLoginAttempts = attempts;
 
   if (attempts >= MAX_FAILED_ATTEMPTS) {
-    const nextLevel = (user.lockoutLevel ?? 0) + 1;
-    user.lockoutLevel = nextLevel;
-    user.lockUntil = new Date(Date.now() + nextLevel * LOCKOUT_STEP_MS);
+    user.lockUntil = new Date(Date.now() + LOCKOUT_MS);
     user.failedLoginAttempts = 0;
+    user.lockoutLevel = (user.lockoutLevel ?? 0) + 1;
     await user.save();
-    throw tooManyRequests(lockMessage(user.lockUntil));
+    throw tooManyRequests(lockMessage(user.lockUntil), lockDetails(user.lockUntil));
   }
 
   await user.save();
   const remaining = MAX_FAILED_ATTEMPTS - attempts;
   throw unauthorized(
-    `Invalid email or password. ${remaining} attempt${remaining === 1 ? "" : "s"} remaining before lockout.`,
+    `Incorrect password. ${remaining} attempt${remaining === 1 ? "" : "s"} remaining.`,
+    [{ field: "remainingAttempts", message: String(remaining) }],
   );
 }
 
@@ -193,6 +201,7 @@ export async function registerUser(input: {
       failedLoginAttempts: 0,
       lockoutLevel: 0,
       lockUntil: null,
+      sessionVersion: 1,
     });
 
     const { trialStartsAt, trialEndsAt } = defaultTrialWindow();
@@ -229,6 +238,7 @@ export async function registerUser(input: {
       orgId: String(organization._id),
       role: appRole,
       isPlatformAdmin,
+      sessionVersion: user.sessionVersion ?? 1,
     });
 
     return {
@@ -274,7 +284,8 @@ export async function loginUser(input: { email: string; password: string }) {
   if (!user) throw unauthorized("Invalid email or password");
 
   if (isLocked(user)) {
-    throw tooManyRequests(lockMessage(user.lockUntil as Date));
+    const until = user.lockUntil as Date;
+    throw tooManyRequests(lockMessage(until), lockDetails(until));
   }
 
   // Lock window elapsed — allow a fresh set of attempts
@@ -315,6 +326,10 @@ export async function loginUser(input: { email: string; password: string }) {
 
   await syncUserRoles(user, membership?.role, isPlatformAdmin);
 
+  // New login wins — every other device’s tokens stop working immediately.
+  user.sessionVersion = (user.sessionVersion ?? 0) + 1;
+  await user.save();
+
   const appRole = mapMembershipRole(membership?.role, isPlatformAdmin);
   const tokens = issueTokens({
     userId: String(user._id),
@@ -322,6 +337,7 @@ export async function loginUser(input: { email: string; password: string }) {
     orgId: resolvedOrgId,
     role: appRole,
     isPlatformAdmin,
+    sessionVersion: user.sessionVersion,
   });
 
   return {
@@ -341,6 +357,7 @@ export function issueTokens(input: {
   orgId: string;
   role: string;
   isPlatformAdmin?: boolean;
+  sessionVersion: number;
 }) {
   const accessToken = signAccessToken({
     sub: input.userId,
@@ -348,9 +365,21 @@ export function issueTokens(input: {
     orgId: input.orgId,
     role: input.role,
     isPlatformAdmin: input.isPlatformAdmin,
+    sv: input.sessionVersion,
   });
-  const refreshToken = signRefreshToken({ sub: input.userId });
+  const refreshToken = signRefreshToken({
+    sub: input.userId,
+    sv: input.sessionVersion,
+  });
   return { accessToken, refreshToken };
+}
+
+/** Invalidate the active session (logout / security revoke). */
+export async function invalidateSession(userId: string) {
+  const user = await User.findById(userId).select("sessionVersion");
+  if (!user) return;
+  user.sessionVersion = (user.sessionVersion ?? 0) + 1;
+  await user.save();
 }
 
 export async function updateAvatar(userId: string, avatarUrl: string) {
@@ -373,6 +402,68 @@ export async function updateAvatar(userId: string, avatarUrl: string) {
 
   return {
     user: toPublicUser(user, orgId, membership?.role ?? "OWNER"),
+  };
+}
+
+export async function updateProfile(
+  userId: string,
+  orgId: string | undefined,
+  input: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    companyName: string;
+  },
+) {
+  const user = await User.findById(userId);
+  if (!user) throw notFound("User not found");
+
+  const firstName = input.firstName.trim();
+  const lastName = input.lastName.trim();
+  const phone = normalizePhone(input.phone);
+  const companyName = input.companyName.trim();
+
+  if (!firstName || !lastName) {
+    throw badRequest("Enter both your first and last name");
+  }
+  if (firstName.toLowerCase() === lastName.toLowerCase()) {
+    throw badRequest("Enter both your first and last name");
+  }
+
+  const phoneOwner = await User.findOne({ phone, _id: { $ne: user._id } });
+  if (phoneOwner) throw conflict("Phone number already registered");
+
+  user.name = `${firstName} ${lastName}`.trim();
+  user.phone = phone;
+  await user.save();
+
+  const isPlatformAdmin = await resolvePlatformAdmin(user);
+  const membership = orgId
+    ? await Membership.findOne({ userId: user._id, orgId })
+    : await Membership.findOne({ userId: user._id }).sort({ createdAt: 1 });
+
+  let resolvedOrgId = membership ? String(membership.orgId) : orgId;
+  if (!resolvedOrgId && isPlatformAdmin) {
+    const anyOrg = await Organization.findOne().sort({ createdAt: 1 });
+    resolvedOrgId = anyOrg ? String(anyOrg._id) : undefined;
+  }
+  if (!resolvedOrgId) throw unauthorized("No organization membership");
+
+  const organization = await Organization.findById(resolvedOrgId);
+  if (!organization) throw notFound("Organization not found");
+
+  if (organization.name !== companyName) {
+    organization.name = companyName;
+    await organization.save();
+  }
+
+  return {
+    user: toPublicUser(user, resolvedOrgId, membership?.role ?? "OWNER"),
+    organization: {
+      id: String(organization._id),
+      name: organization.name,
+      slug: organization.slug,
+    },
   };
 }
 
@@ -416,7 +507,7 @@ export async function getMe(userId: string, orgId?: string) {
 
 export async function refreshSession(refreshToken: string) {
   const { verifyRefreshToken } = await import("../../middleware/auth.middleware.js");
-  let payload: { sub: string };
+  let payload: { sub: string; sv?: number };
   try {
     payload = verifyRefreshToken(refreshToken);
   } catch {
@@ -425,6 +516,10 @@ export async function refreshSession(refreshToken: string) {
 
   const user = await User.findById(payload.sub);
   if (!user) throw unauthorized("User not found");
+
+  if ((payload.sv ?? 0) !== (user.sessionVersion ?? 0)) {
+    throw sessionSuperseded();
+  }
 
   const isPlatformAdmin = await resolvePlatformAdmin(user);
 
@@ -450,6 +545,7 @@ export async function refreshSession(refreshToken: string) {
     orgId,
     role: mapMembershipRole(membership?.role, isPlatformAdmin),
     isPlatformAdmin,
+    sessionVersion: user.sessionVersion ?? 0,
   });
 
   return {

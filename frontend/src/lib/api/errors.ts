@@ -26,6 +26,11 @@ export class ApiRequestError extends Error {
     return this.status === 401 || this.code === "UNAUTHORIZED";
   }
 
+  /** True when another device took over this account’s session. */
+  get isSessionSuperseded(): boolean {
+    return this.code === "SESSION_SUPERSEDED";
+  }
+
   /** True when the user is authenticated but lacks permission. */
   get isForbidden(): boolean {
     return this.status === 403 || this.code === "FORBIDDEN";
@@ -41,9 +46,13 @@ export class ApiRequestError extends Error {
     return this.code === "VALIDATION_ERROR" || this.status === 422;
   }
 
-  /** True when the client was rate-limited. */
+  /** True when the client was rate-limited / lockout. */
   get isRateLimited(): boolean {
-    return this.status === 429 || this.code === "RATE_LIMITED";
+    return (
+      this.status === 429 ||
+      this.code === "RATE_LIMITED" ||
+      this.code === "TOO_MANY_REQUESTS"
+    );
   }
 
   /** True when the failure is likely transient and safe to retry. */

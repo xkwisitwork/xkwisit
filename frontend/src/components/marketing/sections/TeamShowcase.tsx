@@ -57,7 +57,7 @@ export function TeamShowcase() {
             The team that solves business problems & drives growth.
           </h2>
           <p className="mx-auto mt-3 max-w-md text-[0.95rem] leading-relaxed text-neutral-500">
-            One plan. Named owners. Not five people guessing.
+            One plan. Named owners. Not a crowd guessing.
           </p>
         </motion.div>
 
@@ -79,7 +79,7 @@ export function TeamShowcase() {
           >
             {/* ── LEFT SHELL ── */}
             <div className="relative">
-              <div className="relative overflow-hidden rounded-[2.5rem] bg-[#3B05C4] p-3 mobile-sm:rounded-[2.75rem] mobile-sm:p-3.5 tablet:rounded-[3rem] tablet:p-4">
+              <div className="relative overflow-hidden rounded-[2.5rem] border border-[#EEEAF8] bg-white p-3 shadow-[0_24px_50px_-32px_rgba(22,2,74,0.28)] mobile-sm:rounded-[2.75rem] mobile-sm:p-3.5 tablet:rounded-[3rem] tablet:p-4">
                 {/* Profile strip */}
                 <AnimatePresence mode="wait">
                   <motion.div
@@ -88,9 +88,9 @@ export function TeamShowcase() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={reduce ? undefined : { opacity: 0, y: 6 }}
                     transition={{ duration: 0.35, ease }}
-                    className="mb-3 flex flex-wrap items-center gap-2 rounded-full bg-[#2C0494] py-1.5 pl-1.5 pr-2"
+                    className="mb-3 flex flex-wrap items-center gap-2 rounded-full bg-[#F7F4FF] py-1.5 pl-1.5 pr-2 ring-1 ring-[#E8E0F5]"
                   >
-                    <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full ring-2 ring-white/80">
+                    <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full ring-2 ring-white">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={member.image}
@@ -100,20 +100,20 @@ export function TeamShowcase() {
                       />
                     </span>
                     <div className="min-w-0 flex-1 pr-1">
-                      <p className="truncate font-display text-[0.82rem] font-bold leading-tight text-white">
+                      <p className="truncate font-display text-[0.82rem] font-bold leading-tight text-[#16024A]">
                         {member.name}
                       </p>
-                      <p className="truncate text-[0.62rem] text-white/65">{member.role}</p>
+                      <p className="truncate text-[0.62rem] text-[#16024A]/55">{member.role}</p>
                     </div>
                     <Link
                       href={member.href}
-                      className="shrink-0 rounded-full bg-white/15 px-2.5 py-1.5 text-[0.62rem] font-semibold text-white transition hover:bg-white/25"
+                      className="shrink-0 rounded-full bg-white px-2.5 py-1.5 text-[0.62rem] font-semibold text-[#16024A] ring-1 ring-[#E8E0F5] transition hover:bg-[#F0EBFF]"
                     >
                       See work
                     </Link>
                     <Link
                       href="/book"
-                      className="shrink-0 rounded-full bg-[#C8F5E4] px-2.5 py-1.5 text-[0.62rem] font-semibold text-[#16024A] transition hover:bg-white"
+                      className="shrink-0 rounded-full bg-[#3B05C4] px-2.5 py-1.5 text-[0.62rem] font-semibold text-white transition hover:bg-[#2C0494]"
                     >
                       Book them
                     </Link>
@@ -121,7 +121,7 @@ export function TeamShowcase() {
                 </AnimatePresence>
 
                 {/* Portrait plate */}
-                <div className="relative overflow-hidden rounded-[1.85rem] bg-[#16024A] ring-[3px] ring-white mobile-sm:rounded-[2rem] tablet:rounded-[2.25rem]">
+                <div className="relative overflow-hidden rounded-[1.85rem] bg-[#F7F4FF] ring-[3px] ring-[#F0EBFF] mobile-sm:rounded-[2rem] tablet:rounded-[2.25rem]">
                   <div className="relative aspect-square w-full tablet:aspect-[5/5.15]">
                     <AnimatePresence mode="wait">
                       <motion.div
@@ -151,7 +151,7 @@ export function TeamShowcase() {
                     >
                       <Link
                         href="/book"
-                        className="flex items-center gap-2 rounded-full bg-white px-3 py-2.5 text-[0.78rem] font-semibold text-[#16024A] shadow-[0_12px_28px_-14px_rgba(22,2,74,0.45)] transition hover:bg-[#F7F4FF]"
+                        className="flex items-center gap-2 rounded-full bg-white px-3 py-2.5 text-[0.78rem] font-semibold text-[#16024A] shadow-[0_12px_28px_-14px_rgba(22,2,74,0.45)] ring-1 ring-[#EEEAF8] transition hover:bg-[#F7F4FF]"
                       >
                         <MessageCircle className="h-4 w-4 text-[#3B05C4]" aria-hidden />
                         Ask {firstName} about {member.tags[0].toLowerCase()}…
@@ -160,17 +160,17 @@ export function TeamShowcase() {
                   </div>
                 </div>
 
-                {/* Cutout row — tags tucked into bottom of purple shell */}
+                {/* Tags under portrait */}
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   {member.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="rounded-full bg-white/15 px-3 py-1.5 text-[0.7rem] font-semibold text-white"
+                      className="rounded-full bg-[#F7F4FF] px-3 py-1.5 text-[0.7rem] font-semibold text-[#16024A] ring-1 ring-[#E8E0F5]"
                     >
                       {tag}
                     </span>
                   ))}
-                  <span className="rounded-full bg-[#C8F5E4] px-3 py-1.5 text-[0.7rem] font-semibold text-[#16024A]">
+                  <span className="rounded-full bg-[#3B05C4] px-3 py-1.5 text-[0.7rem] font-semibold text-white">
                     {member.focus}
                   </span>
                 </div>

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { AppSidebar } from "@/components/app/AppSidebar";
 import { AppTopbar } from "@/components/app/AppTopbar";
 import { TrialBanner } from "@/components/app/TrialBanner";
+import { SessionConflictGuard } from "@/components/auth/SessionConflictGuard";
 import { AuthContextProvider } from "@/contexts/AuthContext";
 import { BillingContextProvider } from "@/contexts/BillingContext";
 import { CommandPaletteContextProvider } from "@/contexts/CommandPaletteContext";
@@ -49,6 +50,7 @@ export function AppShell({ children, session, organization }: AppShellProps) {
         <BillingContextProvider>
           <NotificationContextProvider>
             <CommandPaletteContextProvider>
+              <SessionConflictGuard />
               <div
                 className="flex h-dvh max-h-dvh overflow-hidden bg-[#F3F0F8]"
                 data-shell="app"

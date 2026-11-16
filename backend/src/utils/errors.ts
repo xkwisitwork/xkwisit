@@ -21,8 +21,18 @@ export function badRequest(message: string, details?: AppError["details"]) {
   return new AppError(message, 400, "BAD_REQUEST", details);
 }
 
-export function unauthorized(message = "Unauthorized") {
-  return new AppError(message, 401, "UNAUTHORIZED");
+export function unauthorized(
+  message = "Unauthorized",
+  details?: AppError["details"],
+) {
+  return new AppError(message, 401, "UNAUTHORIZED", details);
+}
+
+/** Another device signed in — current tokens are no longer valid. */
+export function sessionSuperseded(
+  message = "This account signed in on another device. You have been signed out.",
+) {
+  return new AppError(message, 401, "SESSION_SUPERSEDED");
 }
 
 export function forbidden(message = "Forbidden") {
@@ -37,8 +47,11 @@ export function conflict(message: string) {
   return new AppError(message, 409, "CONFLICT");
 }
 
-export function tooManyRequests(message: string) {
-  return new AppError(message, 429, "TOO_MANY_REQUESTS");
+export function tooManyRequests(
+  message: string,
+  details?: AppError["details"],
+) {
+  return new AppError(message, 429, "TOO_MANY_REQUESTS", details);
 }
 
 export function validationError(

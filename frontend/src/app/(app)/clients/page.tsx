@@ -38,8 +38,8 @@ export default function ClientsPage() {
         actions={
           <Button
             variant="contained"
-            leftIcon={<Plus className="h-4 w-4" />}
-            asChild={false}
+            leftIcon={<Plus className="h-4 w-4" aria-hidden />}
+            asChild
           >
             <Link href="/clients/new">New client</Link>
           </Button>

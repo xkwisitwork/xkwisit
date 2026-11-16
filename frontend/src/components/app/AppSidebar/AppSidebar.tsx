@@ -93,9 +93,9 @@ export function AppSidebar({
         )}
       >
         {compact ? (
-          <LogoMark size="sm" className="!h-9 !w-9" />
+          <LogoMark size="sm" href="" className="!h-9 !w-9" />
         ) : (
-          <LogoFull size="md" />
+          <LogoFull size="md" href="" />
         )}
 
         <IconButton

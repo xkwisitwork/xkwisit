@@ -7,7 +7,7 @@ import type {
   AccessTokenPayload,
   AuthRequestUser,
 } from "../types/auth.types.js";
-import { forbidden, unauthorized } from "../utils/errors.js";
+import { forbidden, sessionSuperseded, unauthorized } from "../utils/errors.js";
 
 export type { AccessTokenPayload, AuthRequestUser };
 
@@ -27,7 +27,7 @@ export function signAccessToken(payload: AccessTokenPayload) {
   });
 }
 
-export function signRefreshToken(payload: { sub: string }) {
+export function signRefreshToken(payload: { sub: string; sv: number }) {
   return jwt.sign(payload, env.JWT_REFRESH_SECRET, {
     expiresIn: env.JWT_REFRESH_EXPIRES as jwt.SignOptions["expiresIn"],
   });
@@ -37,8 +37,11 @@ export function verifyAccessToken(token: string): AccessTokenPayload {
   return jwt.verify(token, env.JWT_ACCESS_SECRET) as AccessTokenPayload;
 }
 
-export function verifyRefreshToken(token: string): { sub: string } {
-  return jwt.verify(token, env.JWT_REFRESH_SECRET) as { sub: string };
+export function verifyRefreshToken(token: string): { sub: string; sv?: number } {
+  return jwt.verify(token, env.JWT_REFRESH_SECRET) as {
+    sub: string;
+    sv?: number;
+  };
 }
 
 function readAccessCandidates(req: Request): string[] {
@@ -63,6 +66,19 @@ function attachUser(req: Request, payload: AccessTokenPayload) {
   req.orgId = (req.headers["x-org-id"] as string) || payload.orgId;
 }
 
+/** Reject tokens from a previous device after a newer login. */
+export async function assertSessionVersion(
+  userId: string,
+  tokenSv: number | undefined,
+) {
+  const user = await User.findById(userId).select("sessionVersion");
+  if (!user) throw unauthorized();
+  const current = user.sessionVersion ?? 0;
+  if ((tokenSv ?? 0) !== current) {
+    throw sessionSuperseded();
+  }
+}
+
 export function authMiddleware(
   req: Request,
   _res: Response,
@@ -74,17 +90,23 @@ export function authMiddleware(
     return;
   }
 
-  for (const token of candidates) {
-    try {
-      attachUser(req, verifyAccessToken(token));
-      next();
-      return;
-    } catch {
-      // try next candidate
-    }
-  }
+  void (async () => {
+    let lastError: unknown = unauthorized();
 
-  next(unauthorized());
+    for (const token of candidates) {
+      try {
+        const payload = verifyAccessToken(token);
+        await assertSessionVersion(payload.sub, payload.sv);
+        attachUser(req, payload);
+        next();
+        return;
+      } catch (err) {
+        lastError = err;
+      }
+    }
+
+    next(lastError);
+  })();
 }
 
 export function optionalAuthMiddleware(
@@ -92,15 +114,19 @@ export function optionalAuthMiddleware(
   _res: Response,
   next: NextFunction,
 ) {
-  for (const token of readAccessCandidates(req)) {
-    try {
-      attachUser(req, verifyAccessToken(token));
-      break;
-    } catch {
-      // ignore
+  void (async () => {
+    for (const token of readAccessCandidates(req)) {
+      try {
+        const payload = verifyAccessToken(token);
+        await assertSessionVersion(payload.sub, payload.sv);
+        attachUser(req, payload);
+        break;
+      } catch {
+        // ignore — optional
+      }
     }
-  }
-  next();
+    next();
+  })();
 }
 
 /** Requires auth + platform super admin (DB flag, not just JWT claim). */

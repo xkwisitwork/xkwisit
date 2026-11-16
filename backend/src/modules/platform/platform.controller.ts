@@ -56,12 +56,27 @@ export const setPlatformAdmin = asyncHandler(async (req: Request, res: Response)
     req.params.id as string,
     Boolean(req.body.isPlatformAdmin),
     req.user.id,
+    {
+      confirm: req.body.confirm === true,
+      confirmAction: req.body.confirmAction,
+    },
   );
-  return sendSuccess(res, data, 200, "User updated");
+  return sendSuccess(
+    res,
+    data,
+    200,
+    data.isPlatformAdmin ? "User promoted to admin" : "User demoted to normal user",
+  );
 });
 
 export const health = asyncHandler(async (_req: Request, res: Response) => {
   const data = await platformService.getSystemHealth();
+  return sendSuccess(res, data);
+});
+
+export const listNetworkTable = asyncHandler(async (req: Request, res: Response) => {
+  const table = req.params.table as platformService.NetworkTableKey;
+  const data = await platformService.listNetworkTable(table);
   return sendSuccess(res, data);
 });
 

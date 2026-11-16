@@ -57,6 +57,7 @@ async function refreshBackendTokens(refreshToken: string): Promise<{
   accessToken: string;
   refreshToken?: string;
   user?: AuthTokenUser;
+  sessionSuperseded?: boolean;
 } | null> {
   const baseUrl = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL;
   if (!baseUrl) return null;
@@ -67,7 +68,19 @@ async function refreshBackendTokens(refreshToken: string): Promise<{
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      try {
+        const errBody = (await response.json()) as {
+          error?: { code?: string };
+        };
+        if (errBody.error?.code === "SESSION_SUPERSEDED") {
+          return { accessToken: "", sessionSuperseded: true };
+        }
+      } catch {
+        // ignore parse errors
+      }
+      return null;
+    }
 
     const payload = (await response.json()) as {
       data?: {
@@ -109,9 +122,13 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        // Prefer tokens from a prior /auth/login|register call so we do not
+        // bump sessionVersion twice (single-device login enforcement).
+        accessToken: { label: "Access token", type: "text" },
+        refreshToken: { label: "Refresh token", type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials.password) return null;
+        if (!credentials?.email) return null;
 
         const baseUrl = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL;
 
@@ -120,31 +137,73 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const response = await fetch(`${baseUrl}${endpoints.auth.login}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: credentials.email,
-            password: credentials.password,
-          }),
-        });
+        const bootstrapAccess =
+          typeof credentials.accessToken === "string"
+            ? credentials.accessToken.trim()
+            : "";
+        const bootstrapRefresh =
+          typeof credentials.refreshToken === "string"
+            ? credentials.refreshToken.trim()
+            : "";
 
-        if (!response.ok) return null;
+        let user: AuthTokenUser | undefined;
+        let accessToken: string | undefined;
+        let refreshToken: string | undefined;
 
-        const payload = (await response.json()) as {
-          data?: {
-            user: AuthTokenUser;
-            accessToken: string;
+        if (bootstrapAccess) {
+          // Reuse tokens already issued by login/register — do not call /auth/login again.
+          const meResponse = await fetch(`${baseUrl}${endpoints.auth.me}`, {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${bootstrapAccess}`,
+            },
+          });
+          if (!meResponse.ok) return null;
+
+          const mePayload = (await meResponse.json()) as {
+            data?: { user?: AuthTokenUser };
+            user?: AuthTokenUser;
+          };
+          user = mePayload.data?.user ?? mePayload.user;
+          accessToken = bootstrapAccess;
+          refreshToken = bootstrapRefresh || undefined;
+        } else {
+          if (!credentials.password) return null;
+
+          const internal =
+            process.env.INTERNAL_API_SECRET ||
+            process.env.JWT_ACCESS_SECRET ||
+            "";
+          const response = await fetch(`${baseUrl}${endpoints.auth.login}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(internal ? { "x-xkwisit-internal": internal } : {}),
+            },
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password,
+            }),
+          });
+
+          if (!response.ok) return null;
+
+          const payload = (await response.json()) as {
+            data?: {
+              user: AuthTokenUser;
+              accessToken: string;
+              refreshToken?: string;
+            };
+            user?: AuthTokenUser;
+            accessToken?: string;
             refreshToken?: string;
           };
-          user?: AuthTokenUser;
-          accessToken?: string;
-          refreshToken?: string;
-        };
 
-        const user = payload.data?.user ?? payload.user;
-        const accessToken = payload.data?.accessToken ?? payload.accessToken;
-        const refreshToken = payload.data?.refreshToken ?? payload.refreshToken;
+          user = payload.data?.user ?? payload.user;
+          accessToken = payload.data?.accessToken ?? payload.accessToken;
+          refreshToken = payload.data?.refreshToken ?? payload.refreshToken;
+        }
 
         if (!user) return null;
 
@@ -220,13 +279,31 @@ export const authOptions: NextAuthOptions = {
         return token;
       }
 
-      // Client called `update({ image })` after an UploadThing avatar save.
+      // Client called `update(...)` after avatar or profile saves.
       if (trigger === "update" && session && typeof session === "object") {
-        const patch = session as { image?: string | null };
+        const patch = session as {
+          image?: string | null;
+          firstName?: string;
+          lastName?: string;
+          fullName?: string;
+          name?: string;
+        };
         if (typeof patch.image === "string" && patch.image.trim()) {
           token.picture = patch.image.trim();
         } else if (patch.image === null) {
           token.picture = undefined;
+        }
+        if (typeof patch.firstName === "string") {
+          token.firstName = usable(patch.firstName);
+        }
+        if (typeof patch.lastName === "string") {
+          token.lastName = usable(patch.lastName);
+        }
+        const nextFull =
+          usable(patch.fullName) ?? usable(patch.name) ?? undefined;
+        if (nextFull) {
+          token.fullName = nextFull;
+          token.name = nextFull;
         }
       }
 
@@ -239,6 +316,14 @@ export const authOptions: NextAuthOptions = {
         )
       ) {
         const refreshed = await refreshBackendTokens(String(token.refreshToken));
+        if (refreshed?.sessionSuperseded) {
+          // Another device owns the session — drop tokens so the client logs out.
+          delete token.accessToken;
+          delete token.refreshToken;
+          delete token.accessTokenExpires;
+          token.error = "SessionReplaced";
+          return token;
+        }
         if (refreshed?.accessToken) {
           token.accessToken = refreshed.accessToken;
           token.accessTokenExpires = readJwtExp(refreshed.accessToken) ?? undefined;
@@ -246,10 +331,16 @@ export const authOptions: NextAuthOptions = {
             token.refreshToken = refreshed.refreshToken;
           }
           if (refreshed.user) {
-            token.isPlatformAdmin = Boolean(refreshed.user.isPlatformAdmin);
-            if (refreshed.user.isPlatformAdmin) {
+            const nowAdmin = Boolean(refreshed.user.isPlatformAdmin);
+            token.isPlatformAdmin = nowAdmin;
+            if (nowAdmin) {
               token.role = ROLES.SUPER_ADMIN;
               token.permissions = ROLE_PERMISSIONS[ROLES.SUPER_ADMIN] ?? [];
+            } else if (refreshed.user.role) {
+              // Pick up demotions (and normal role sync) after a super admin change.
+              const nextRole = refreshed.user.role as Role;
+              token.role = nextRole;
+              token.permissions = ROLE_PERMISSIONS[nextRole] ?? [];
             }
             if (refreshed.user.avatarUrl) {
               token.picture = refreshed.user.avatarUrl;
@@ -294,6 +385,9 @@ export const authOptions: NextAuthOptions = {
       };
 
       session.accessToken = token.accessToken as string | undefined;
+      if (token.error === "SessionReplaced") {
+        session.error = "SessionReplaced";
+      }
 
       return session;
     },

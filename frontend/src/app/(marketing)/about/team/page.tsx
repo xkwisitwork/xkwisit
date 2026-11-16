@@ -23,13 +23,13 @@ export default function Page() {
       <MarketingPageHero
         eyebrow="Team"
         title="The team that solves business problems & drive growth."
-        description="Named owners for marketing, software, brand, and numbers - not five people guessing."
+        description="Three named owners — CEO, CTO, and engineering — not a crowd guessing."
         primaryHref={ROUTES.book}
         primaryLabel="Book a strategy call"
         secondaryHref="/about"
         secondaryLabel="About Xkwisit"
         imageSrc="/images/people/tobe.jpg"
-        imageAlt="uncle TOBE, Lead Software Engineer"
+        imageAlt="Tobe, Lead Software Engineer"
         stats={[
           { value: String(teamMembers.length), label: "Named owners" },
           { value: "1 Monday", label: "Shared check-in" },

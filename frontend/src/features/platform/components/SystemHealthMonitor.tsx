@@ -1,12 +1,15 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import {
   Activity,
   Building2,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   Database,
+  Loader2,
   MoreHorizontal,
   Server,
   SlidersHorizontal,
@@ -14,8 +17,20 @@ import {
   Zap,
 } from "lucide-react";
 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/Dialog";
 import { cn } from "@/lib/utils/cn";
-import type { PlatformHealth } from "../api/platform.api";
+import {
+  getPlatformNetworkTable,
+  type NetworkTableKey,
+  type NetworkTableRow,
+  type PlatformHealth,
+} from "../api/platform.api";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -246,12 +261,54 @@ function HealthRing({
   );
 }
 
+const TABLE_COPY: Record<
+  NetworkTableKey,
+  { label: string; description: string }
+> = {
+  workspaces: {
+    label: "Workspaces",
+    description: "Agency and platform workspaces on the network.",
+  },
+  users: {
+    label: "Users",
+    description: "Registered accounts across the network.",
+  },
+  assessments: {
+    label: "Assessments",
+    description: "Growth assessment submissions captured by the network.",
+  },
+  bookings: {
+    label: "Bookings",
+    description: "Strategy call bookings flowing into the network.",
+  },
+  sheetDownloads: {
+    label: "Sheet leads",
+    description: "Marketing PDF unlocks flowing into the network.",
+  },
+};
+
+function formatWhen(iso: string | null) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString("en-NG", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
+}
+
 export function SystemHealthMonitor({
   health,
   loading,
+  accessToken,
 }: {
   health: PlatformHealth | null;
   loading?: boolean;
+  accessToken?: string | null;
 }) {
   const healthy = health?.status === "healthy";
   const uptime = health ? formatUptime(health.uptimeSeconds) : { value: "—", unit: "uptime" };
@@ -264,23 +321,66 @@ export function SystemHealthMonitor({
       })
     : "—";
 
+  const PAGE_SIZE = 8;
+  const [openTable, setOpenTable] = useState<NetworkTableKey | null>(null);
+  const [rows, setRows] = useState<NetworkTableRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!openTable || !accessToken) return;
+    let cancelled = false;
+    setDetailLoading(true);
+    setDetailError(null);
+    setRows([]);
+    setPage(1);
+    void (async () => {
+      try {
+        const data = await getPlatformNetworkTable(openTable, accessToken);
+        if (cancelled) return;
+        setRows(data.rows);
+        setTotal(data.total);
+      } catch (e) {
+        if (cancelled) return;
+        setDetailError(e instanceof Error ? e.message : "Failed to load details");
+      } finally {
+        if (!cancelled) setDetailLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [openTable, accessToken]);
+
+  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pagedRows = rows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const rangeStart = rows.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const rangeEnd = Math.min(safePage * PAGE_SIZE, rows.length);
+
   const counts = [
     {
+      key: "workspaces" as const,
       label: "Workspaces",
       value: health?.counts.workspaces,
       Icon: Building2,
     },
     {
+      key: "users" as const,
       label: "Users",
       value: health?.counts.users,
       Icon: Users,
     },
     {
+      key: "assessments" as const,
       label: "Assessments",
       value: health?.counts.assessments,
       Icon: Activity,
     },
     {
+      key: "bookings" as const,
       label: "Bookings",
       value: health?.counts.bookings,
       Icon: CalendarDays,
@@ -412,13 +512,16 @@ export function SystemHealthMonitor({
       {/* KPI tiles — 2×2 + full-width efficiency strip (no orphan rail gaps) */}
       <div className="flex min-w-0 flex-col gap-3 tablet:col-span-7 laptop:col-span-8">
         <div className="grid min-w-0 grid-cols-2 gap-3">
-          {counts.slice(0, 4).map(({ label, value, Icon }, i) => (
-            <motion.div
+          {counts.slice(0, 4).map(({ key, label, value, Icon }, i) => (
+            <motion.button
               key={label}
+              type="button"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 * i, duration: 0.4, ease }}
-              className="flex min-w-0 flex-col justify-between rounded-[1.5rem] border border-[#EDE8F7] bg-white p-4 shadow-[0_14px_32px_-28px_rgba(22,2,74,0.4)]"
+              onClick={() => setOpenTable(key)}
+              className="flex min-w-0 flex-col justify-between rounded-[1.5rem] border border-[#EDE8F7] bg-white p-4 text-left shadow-[0_14px_32px_-28px_rgba(22,2,74,0.4)] transition hover:border-[#3B05C4]/35 hover:bg-[#FBF9FF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3B05C4]"
+              aria-label={`View ${label} details`}
             >
               <div className="flex items-start justify-between gap-2">
                 <p className="text-[0.72rem] font-medium text-neutral-500">{label}</p>
@@ -428,15 +531,18 @@ export function SystemHealthMonitor({
                 {value ?? "—"}
               </p>
               <p className="mt-1 text-[0.68rem] text-neutral-500">Network table count</p>
-            </motion.div>
+            </motion.button>
           ))}
         </div>
 
-        <motion.div
+        <motion.button
+          type="button"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.4, ease }}
-          className="flex min-w-0 items-center justify-between gap-4 rounded-[1.5rem] border border-transparent bg-[#16024A] p-4 text-white shadow-[0_14px_32px_-28px_rgba(22,2,74,0.55)]"
+          onClick={() => setOpenTable("sheetDownloads")}
+          className="flex min-w-0 items-center justify-between gap-4 rounded-[1.5rem] border border-transparent bg-[#16024A] p-4 text-left text-white shadow-[0_14px_32px_-28px_rgba(22,2,74,0.55)] transition hover:bg-[#1F0460] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FC3FE3]"
+          aria-label="View Sheet leads details"
         >
           <div className="min-w-0">
             <p className="text-[0.72rem] font-medium text-white/55">Sheet leads</p>
@@ -450,8 +556,112 @@ export function SystemHealthMonitor({
           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/10 text-[#FC3FE3]">
             <Zap className="h-5 w-5" aria-hidden />
           </span>
-        </motion.div>
+        </motion.button>
       </div>
+
+      <Dialog
+        open={openTable != null}
+        onOpenChange={(open) => {
+          if (!open) setOpenTable(null);
+        }}
+      >
+        <DialogContent size="lg" className="border-[#EDE8F7] bg-white p-0">
+          <DialogHeader className="border-b border-[#F0ECF6] px-5 pb-4 pt-5">
+            <DialogTitle className="font-display text-[1.25rem] font-bold text-[#16024A]">
+              {openTable ? TABLE_COPY[openTable].label : "Network table"}
+            </DialogTitle>
+            <DialogDescription className="text-[0.84rem] text-neutral-500">
+              {openTable ? TABLE_COPY[openTable].description : ""}
+              {openTable && !detailLoading && !detailError
+                ? ` · ${total} total`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="px-5 py-4">
+            {!accessToken ? (
+              <p className="text-[0.84rem] text-neutral-500">
+                Sign in again to load network details.
+              </p>
+            ) : detailLoading ? (
+              <div className="flex items-center gap-2 py-8 text-[0.84rem] text-neutral-500">
+                <Loader2 className="h-4 w-4 animate-spin text-[#3B05C4]" aria-hidden />
+                Loading details…
+              </div>
+            ) : detailError ? (
+              <p className="rounded-xl border border-[#F9DADA] bg-[#FFF8F8] px-3 py-2.5 text-[0.84rem] text-[#9B1C1C]">
+                {detailError}
+              </p>
+            ) : rows.length === 0 ? (
+              <p className="py-8 text-[0.84rem] text-neutral-500">
+                No rows in this network table yet.
+              </p>
+            ) : (
+              <>
+                <ul className="divide-y divide-[#F0ECF6]">
+                  {pagedRows.map((row) => (
+                    <li
+                      key={row.id}
+                      className="flex items-start justify-between gap-3 py-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-[0.84rem] font-semibold text-[#16024A]">
+                          {row.title}
+                        </p>
+                        {row.subtitle ? (
+                          <p className="mt-0.5 truncate text-[0.75rem] text-neutral-500">
+                            {row.subtitle}
+                          </p>
+                        ) : null}
+                        {row.meta ? (
+                          <p className="mt-0.5 truncate text-[0.72rem] text-[#3B05C4]">
+                            {row.meta}
+                          </p>
+                        ) : null}
+                      </div>
+                      <time className="shrink-0 text-[0.68rem] text-neutral-400">
+                        {formatWhen(row.at)}
+                      </time>
+                    </li>
+                  ))}
+                </ul>
+
+                {pageCount > 1 ? (
+                  <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#F0ECF6] pt-3">
+                    <p className="text-[0.72rem] text-neutral-500">
+                      {rangeStart}–{rangeEnd} of {rows.length}
+                      {total > rows.length ? ` · ${total} total` : ""}
+                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={safePage <= 1}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#EDE8F7] text-[#16024A] transition hover:bg-[#F7F5FC] disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label="Previous page"
+                      >
+                        <ChevronLeft className="h-4 w-4" aria-hidden />
+                      </button>
+                      <span className="min-w-[4.5rem] text-center text-[0.75rem] font-semibold tabular-nums text-[#16024A]">
+                        {safePage} / {pageCount}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                        disabled={safePage >= pageCount}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#EDE8F7] text-[#16024A] transition hover:bg-[#F7F5FC] disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label="Next page"
+                      >
+                        <ChevronRight className="h-4 w-4" aria-hidden />
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

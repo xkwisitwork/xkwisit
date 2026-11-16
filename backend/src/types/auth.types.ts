@@ -60,6 +60,8 @@ export type AccessTokenPayload = {
   orgId?: string;
   role?: string;
   isPlatformAdmin?: boolean;
+  /** Must match User.sessionVersion for the token to stay valid. */
+  sv?: number;
 };
 
 export type AuthRequestUser = {

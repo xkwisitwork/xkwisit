@@ -158,7 +158,11 @@ export async function setPlatformAdminFlag(
 ): Promise<Pick<PlatformUser, "id" | "email" | "name" | "isPlatformAdmin">> {
   return apiClient(endpoints.platform.setPlatformAdmin(userId), {
     method: "PATCH",
-    body: { isPlatformAdmin },
+    body: {
+      isPlatformAdmin,
+      confirm: true as const,
+      confirmAction: isPlatformAdmin ? ("PROMOTE_ADMIN" as const) : ("DEMOTE_USER" as const),
+    },
     headers: withAuth(accessToken),
   });
 }
@@ -167,6 +171,36 @@ export async function getPlatformHealth(
   accessToken?: string | null,
 ): Promise<PlatformHealth> {
   return apiClient<PlatformHealth>(endpoints.platform.health, {
+    headers: withAuth(accessToken),
+  });
+}
+
+export type NetworkTableKey =
+  | "workspaces"
+  | "users"
+  | "assessments"
+  | "bookings"
+  | "sheetDownloads";
+
+export type NetworkTableRow = {
+  id: string;
+  title: string;
+  subtitle: string;
+  meta: string;
+  at: string | null;
+};
+
+export type NetworkTablePayload = {
+  table: NetworkTableKey;
+  total: number;
+  rows: NetworkTableRow[];
+};
+
+export async function getPlatformNetworkTable(
+  table: NetworkTableKey,
+  accessToken?: string | null,
+): Promise<NetworkTablePayload> {
+  return apiClient<NetworkTablePayload>(endpoints.platform.networkTable(table), {
     headers: withAuth(accessToken),
   });
 }

@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
+import { getActivitySessionId } from "@/lib/activity/session";
+
 type GeoFix = {
   latitude: number;
   longitude: number;
@@ -53,6 +55,7 @@ export function VisitBeacon() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           path: pathname,
+          sessionId: getActivitySessionId(),
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           locale: navigator.language,
           ...(geo

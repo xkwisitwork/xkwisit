@@ -40,8 +40,8 @@ export default function SheetDownloadsPage() {
     <PlatformGate>
       <div className="space-y-6">
         <PageHeader
-          title="Growth sheet leads"
-          description="People who unlocked the business growth strategy PDF - name, email, and phone."
+          title="PDF download leads"
+          description="People who unlocked a gated PDF — growth strategy, Launch Brand Playbook, or E-commerce CRO Blueprint. Name, email, phone, and which file."
         />
 
         {error ? (
@@ -51,10 +51,10 @@ export default function SheetDownloadsPage() {
         ) : null}
 
         {loading ? (
-          <p className="text-400 text-neutral-600">Loading sheet leads…</p>
+          <p className="text-400 text-neutral-600">Loading download leads…</p>
         ) : leads.length === 0 ? (
           <p className="text-400 text-neutral-600">
-            No sheet downloads yet. Leads appear here after someone unlocks the PDF.
+            No downloads yet. Leads appear here after someone unlocks a PDF.
           </p>
         ) : (
           <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
@@ -64,6 +64,7 @@ export default function SheetDownloadsPage() {
                   <th className="px-4 py-3">Name</th>
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">Phone</th>
+                  <th className="px-4 py-3">Asset</th>
                   <th className="px-4 py-3">When</th>
                 </tr>
               </thead>
@@ -85,6 +86,20 @@ export default function SheetDownloadsPage() {
                       <a href={`tel:${lead.phone}`} className="hover:text-mint">
                         {lead.phone}
                       </a>
+                    </td>
+                    <td className="px-4 py-3 text-neutral-700">
+                      <span className="font-medium text-neutral-900">
+                        {lead.source === "launch-brand-playbook"
+                          ? "Launch Brand Playbook"
+                          : lead.source === "ecommerce-cro-blueprint"
+                            ? "E-commerce CRO Blueprint"
+                            : lead.source === "monday-sheet"
+                              ? "Growth strategy"
+                              : lead.source}
+                      </span>
+                      <span className="mt-0.5 block text-[0.75rem] text-neutral-500">
+                        {lead.asset}
+                      </span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-neutral-500">
                       {new Date(lead.createdAt).toLocaleString()}

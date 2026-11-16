@@ -1,5 +1,7 @@
 import type { ApiError, ApiResponse, RequestOptions } from "@/types/api";
 
+import { forceLogoutForSessionConflict } from "@/lib/auth/sessionConflict";
+
 import { ApiRequestError, normalizeError } from "./errors";
 
 /* ─── Configuration ───────────────────────────────────── */
@@ -141,7 +143,11 @@ export async function apiClient<TData = unknown>(
             status: response.status,
           };
 
-    throw new ApiRequestError(errorPayload);
+    const error = new ApiRequestError(errorPayload);
+    if (error.isSessionSuperseded && typeof window !== "undefined") {
+      forceLogoutForSessionConflict();
+    }
+    throw error;
   }
 
   if (payload && "success" in payload && payload.success === true) {

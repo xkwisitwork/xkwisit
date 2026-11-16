@@ -14,6 +14,7 @@ import {
 import { assessmentRoutes } from "./modules/assessment/index.js";
 import { authRoutes } from "./modules/auth/index.js";
 import { bookingRoutes } from "./modules/bookings/index.js";
+import { botShieldRoutes } from "./modules/bot-shield/index.js";
 import { dashboardRoutes } from "./modules/dashboard/index.js";
 import { healthRoutes } from "./modules/health/index.js";
 import { organizationRoutes } from "./modules/organizations/index.js";
@@ -40,6 +41,7 @@ export function createApp() {
 
   const api = express.Router();
   api.use("/health", healthRoutes);
+  api.use("/bot", botShieldRoutes);
   api.use("/auth", authRoutes);
   api.use("/organizations", organizationRoutes);
   api.use("/assessment", assessmentRoutes);

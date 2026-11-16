@@ -76,10 +76,10 @@ export function GrowthScoreTeaser() {
             className="relative mx-auto min-h-[28rem] w-[98%] max-w-3xl overflow-hidden rounded-[1.75rem] bg-[#F4F0FF] tablet:w-full"
           >
             <Image
-              src="/images/people/method-owner.jpg"
-              alt="A woman in a black top standing by an office window"
+              src="/images/people/free-check.jpg"
+              alt="Man with glasses on a couch reviewing his laptop — starting with a free check"
               fill
-              className="object-cover object-[center_18%]"
+              className="object-cover object-[center_20%]"
               sizes="(max-width: 1024px) 92vw, 520px"
             />
             <div className="absolute left-3 top-4 w-[min(15.5rem,72%)] rounded-2xl bg-white p-4 shadow-[0_18px_40px_-24px_rgba(22,2,74,0.45)] mobile-sm:left-4 mobile-sm:top-6">

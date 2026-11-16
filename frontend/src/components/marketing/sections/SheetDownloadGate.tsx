@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Download, Loader2 } from "lucide-react";
 
+import { BotShieldFields } from "@/components/security/BotShieldFields";
 import {
   Dialog,
   DialogContent,
@@ -13,16 +14,28 @@ import {
 import {
   createSheetDownload,
   sheetDownloadFileUrl,
+  type SheetDownloadAssetKey,
 } from "@/features/sheet-downloads/api/sheet-downloads.api";
+import { trackActivity } from "@/lib/activity/track";
 import { ApiRequestError } from "@/lib/api/errors";
+import { useBotShield } from "@/lib/bot-shield/useBotShield";
 import { cn } from "@/lib/utils/cn";
 
 const RETRY_WAIT_SECONDS = 30;
+
+const ASSET_FILES: Record<SheetDownloadAssetKey, string> = {
+  "growth-strategy": "XKWISIT_BUSINESS_GROWTH_STRATEGY.pdf",
+  "launch-brand-playbook": "XKWISIT_LAUNCH_BRAND_PLAYBOOK.pdf",
+  "ecommerce-cro-blueprint": "XKWISIT_ECOMMERCE_CRO_BLUEPRINT.pdf",
+};
 
 type SheetDownloadGateProps = {
   className?: string;
   buttonClassName?: string;
   label?: string;
+  title?: string;
+  description?: string;
+  assetKey?: SheetDownloadAssetKey;
   /** Kept for callers; modal layout ignores compact density. */
   compact?: boolean;
 };
@@ -40,6 +53,9 @@ export function SheetDownloadGate({
   className,
   buttonClassName,
   label = "Download Free Package",
+  title = "Unlock your free package",
+  description = "Name, email, and phone — then the PDF downloads straight away.",
+  assetKey = "growth-strategy",
 }: SheetDownloadGateProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -49,6 +65,11 @@ export function SheetDownloadGate({
   const [pending, setPending] = useState(false);
   const [done, setDone] = useState(false);
   const [retryIn, setRetryIn] = useState(0);
+  const {
+    ensureReady: ensureBotShield,
+    refresh: refreshBotShield,
+    honeypotRef,
+  } = useBotShield(open);
 
   useEffect(() => {
     if (retryIn <= 0) {
@@ -93,19 +114,32 @@ export function SheetDownloadGate({
     setPending(true);
 
     try {
+      const shield = await ensureBotShield();
       const lead = await createSheetDownload({
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim(),
+        assetKey,
+        ...shield,
       });
 
+      const fileUrl = sheetDownloadFileUrl(lead.id);
+      const fileName = ASSET_FILES[assetKey];
       const anchor = document.createElement("a");
-      anchor.href = sheetDownloadFileUrl(lead.id);
-      anchor.download = "XKWISIT_BUSINESS_GROWTH_STRATEGY.pdf";
+      anchor.href = fileUrl;
+      anchor.download = fileName;
       anchor.rel = "noopener";
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
+
+      trackActivity({
+        kind: "download",
+        target: fileName,
+        assetKey,
+        href: fileUrl,
+        tag: "sheet-download",
+      });
 
       setDone(true);
       setOpen(false);
@@ -114,6 +148,7 @@ export function SheetDownloadGate({
       setPhone("");
       setRetryIn(0);
     } catch (err) {
+      void refreshBotShield().catch(() => {});
       const isNetwork =
         err instanceof ApiRequestError && err.code === "NETWORK_ERROR";
 
@@ -141,12 +176,12 @@ export function SheetDownloadGate({
         type="button"
         onClick={() => handleOpenChange(true)}
         className={cn(
-          "inline-flex w-full items-center justify-center gap-2 rounded-full border border-mint-ice px-4 py-2.5 text-[0.88rem] font-semibold text-mint-ink",
+          "inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border border-mint-ice px-4 py-2.5 text-[0.88rem] font-semibold text-mint-ink",
           buttonClassName,
         )}
       >
-        <Download className="h-4 w-4" aria-hidden />
-        {done ? "Download again" : label}
+        <Download className="h-4 w-4 shrink-0" aria-hidden />
+        <span className="truncate">{done ? "Download again" : label}</span>
       </button>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -156,14 +191,15 @@ export function SheetDownloadGate({
         >
           <DialogHeader className="mb-3 pr-8">
             <DialogTitle className="font-display text-[1.15rem] font-bold text-[#16024A]">
-              Unlock your free package
+              {title}
             </DialogTitle>
             <DialogDescription className="text-[0.85rem] leading-snug text-[#3A3358]">
-              Name, email, and phone — then the PDF downloads straight away.
+              {description}
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={onSubmit} className="text-left">
+          <form onSubmit={onSubmit} className="relative text-left">
+            <BotShieldFields honeypotRef={honeypotRef} />
             <div className="grid gap-3">
               <label className="block">
                 <span className="mb-1 block text-[0.72rem] font-semibold text-[#16024A]">
@@ -235,7 +271,7 @@ export function SheetDownloadGate({
                   ? "Unlocking…"
                   : waiting
                     ? `Try again in ${retryIn}s`
-                    : "Download Free Package"}
+                    : label}
               </button>
               <button
                 type="button"

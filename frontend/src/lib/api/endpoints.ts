@@ -12,6 +12,7 @@ export const endpoints = {
     logout: "/auth/logout",
     refresh: "/auth/refresh",
     me: "/auth/me",
+    profile: "/auth/me/profile",
     avatar: "/auth/me/avatar",
     verifyEmail: "/auth/verify-email",
     forgotPassword: "/auth/forgot-password",
@@ -19,6 +20,10 @@ export const endpoints = {
     mfaSetup: "/auth/mfa/setup",
     mfaVerify: "/auth/mfa/verify",
     mfaDisable: "/auth/mfa/disable",
+  },
+
+  bot: {
+    challenge: "/bot/challenge",
   },
 
   /* ─── Dashboard ────────────────────────────────────── */
@@ -45,6 +50,7 @@ export const endpoints = {
   platform: {
     stats: "/platform/stats",
     health: "/platform/health",
+    networkTable: (table: string) => `/platform/network-tables/${table}`,
     audit: "/platform/audit",
     workspaces: "/platform/workspaces",
     workspace: (id: string) => `/platform/workspaces/${id}`,

@@ -24,6 +24,11 @@ const envSchema = z.object({
    * Applied on register/login from the server only — never from the client body.
    */
   PLATFORM_ADMIN_EMAILS: z.string().optional().default(""),
+  /**
+   * Shared secret for trusted server→API calls (e.g. NextAuth authorize fallback).
+   * Falls back to JWT_ACCESS_SECRET when unset.
+   */
+  INTERNAL_API_SECRET: z.string().min(8).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

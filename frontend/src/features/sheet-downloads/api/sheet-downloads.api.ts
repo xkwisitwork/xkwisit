@@ -1,5 +1,6 @@
 import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
+import type { BotShieldFields } from "@/lib/bot-shield/types";
 
 export type SheetDownloadLead = {
   id: string;
@@ -11,11 +12,17 @@ export type SheetDownloadLead = {
   createdAt: string;
 };
 
+export type SheetDownloadAssetKey =
+  | "growth-strategy"
+  | "launch-brand-playbook"
+  | "ecommerce-cro-blueprint";
+
 export type CreateSheetDownloadPayload = {
   name: string;
   email: string;
   phone: string;
-};
+  assetKey?: SheetDownloadAssetKey;
+} & BotShieldFields;
 
 export async function createSheetDownload(
   payload: CreateSheetDownloadPayload,

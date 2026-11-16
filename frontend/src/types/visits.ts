@@ -16,6 +16,8 @@ export type VisitRow = {
   locale?: string;
   path: string;
   at: string;
+  /** Correlates with visitor activity sessions when present. */
+  sessionId?: string;
 };
 
 export function normalizeVisit(raw: Record<string, unknown>): VisitRow {
@@ -43,5 +45,6 @@ export function normalizeVisit(raw: Record<string, unknown>): VisitRow {
     locale: typeof raw.locale === "string" ? raw.locale : "",
     path: typeof raw.path === "string" ? raw.path : "/",
     at: typeof raw.at === "string" ? raw.at : new Date().toISOString(),
+    sessionId: typeof raw.sessionId === "string" ? raw.sessionId : undefined,
   };
 }

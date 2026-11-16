@@ -82,6 +82,7 @@ export function PortalSidebar({ mobileOpen = false }: { mobileOpen?: boolean }) 
         )}
       >
         <LogoFull
+          href=""
           size={compact ? "sm" : "md"}
           className={cn(
             compact &&

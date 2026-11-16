@@ -14,6 +14,7 @@ export type { VisitRow };
 
 export async function POST(request: Request) {
   let pagePath = "/";
+  let sessionId: string | undefined;
   let client:
     | {
         latitude?: number;
@@ -27,6 +28,7 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json()) as {
       path?: string;
+      sessionId?: string;
       latitude?: number;
       longitude?: number;
       accuracy?: number;
@@ -35,6 +37,9 @@ export async function POST(request: Request) {
     };
     if (typeof body.path === "string" && body.path.startsWith("/")) {
       pagePath = body.path.slice(0, 180);
+    }
+    if (typeof body.sessionId === "string" && body.sessionId.trim()) {
+      sessionId = body.sessionId.trim().slice(0, 64);
     }
     client = {
       latitude: typeof body.latitude === "number" ? body.latitude : undefined,
@@ -66,6 +71,7 @@ export async function POST(request: Request) {
     locale: client?.locale || "",
     path: pagePath,
     at: new Date().toISOString(),
+    ...(sessionId ? { sessionId } : {}),
   };
 
   await mkdir(path.dirname(LOG_PATH), { recursive: true });

@@ -108,7 +108,11 @@ export default function PlatformHealthPage() {
           </p>
         ) : null}
 
-        <SystemHealthMonitor health={health} loading={loading} />
+        <SystemHealthMonitor
+          health={health}
+          loading={loading}
+          accessToken={accessToken}
+        />
       </div>
     </PlatformGate>
   );

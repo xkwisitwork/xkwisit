@@ -6,6 +6,8 @@ import type { Role } from "@/lib/constants/roles";
 declare module "next-auth" {
   interface Session {
     accessToken?: string;
+    /** Set when refresh fails because another device signed in. */
+    error?: "SessionReplaced";
     user: DefaultSession["user"] & {
       id: string;
       role: Role;
@@ -43,5 +45,6 @@ declare module "next-auth/jwt" {
     lastName?: string;
     fullName?: string;
     permissions?: Permission[];
+    error?: "SessionReplaced";
   }
 }

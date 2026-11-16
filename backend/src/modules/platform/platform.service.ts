@@ -17,6 +17,20 @@ import type { WorkspaceListItem } from "../../types/organization.types.js";
 import { badRequest, forbidden, notFound } from "../../utils/errors.js";
 import { buildUserRoles } from "../auth/auth.types.js";
 
+/** Real submissions only — exclude unfinished starts and legacy seed demos. */
+const REAL_ASSESSMENT_FILTER = {
+  status: { $in: ["SUBMITTED", "SCORED"] },
+  token: { $ne: "demo-assessment-token" },
+  email: { $ne: "demo@xkwisit.com" },
+};
+
+/** Real bookings only — exclude legacy seed demos. */
+const REAL_BOOKING_FILTER = {
+  email: { $ne: "demo@xkwisit.com" },
+  name: { $ne: "Demo Owner" },
+  company: { $ne: "Demo Co" },
+};
+
 function serializeWorkspace(
   org: OrganizationDocument,
   extras?: { ownerIsPlatformAdmin?: boolean },
@@ -217,8 +231,8 @@ export async function getPlatformStats() {
     Organization.countDocuments({ status: "SUSPENDED" }),
     User.countDocuments(),
     User.countDocuments({ isPlatformAdmin: true }),
-    Assessment.countDocuments().catch(() => 0),
-    Booking.countDocuments().catch(() => 0),
+    Assessment.countDocuments(REAL_ASSESSMENT_FILTER).catch(() => 0),
+    Booking.countDocuments(REAL_BOOKING_FILTER).catch(() => 0),
     SheetDownload.countDocuments().catch(() => 0),
     Organization.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
     User.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
@@ -293,7 +307,24 @@ export async function setUserPlatformAdmin(
   userId: string,
   isPlatformAdmin: boolean,
   actorId: string,
+  confirmation?: {
+    confirm?: boolean;
+    confirmAction?: "PROMOTE_ADMIN" | "DEMOTE_USER";
+  },
 ) {
+  // Explicit confirmation is required server-side (not only a browser dialog).
+  if (confirmation?.confirm !== true) {
+    throw badRequest("Confirmation required to promote or demote an admin");
+  }
+  const expectedAction = isPlatformAdmin ? "PROMOTE_ADMIN" : "DEMOTE_USER";
+  if (confirmation.confirmAction !== expectedAction) {
+    throw badRequest(
+      isPlatformAdmin
+        ? "confirmAction must be PROMOTE_ADMIN to grant admin access"
+        : "confirmAction must be DEMOTE_USER to demote to a normal user",
+    );
+  }
+
   if (userId === actorId && !isPlatformAdmin) {
     throw forbidden("You cannot demote yourself from Super Admin");
   }
@@ -301,9 +332,17 @@ export async function setUserPlatformAdmin(
   const user = await User.findById(userId);
   if (!user) throw notFound("User not found");
 
+  // Prefer the live membership role when present so promote stays consistent.
+  const membership = await Membership.findOne({ userId: user._id }).sort({
+    createdAt: 1,
+  });
+  const membershipRole =
+    membership?.role ?? user.membershipRole ?? "OWNER";
+
   user.isPlatformAdmin = isPlatformAdmin;
-  const membershipRole = user.membershipRole ?? "OWNER";
+  user.membershipRole = membershipRole as typeof user.membershipRole;
   user.roles = buildUserRoles(membershipRole, isPlatformAdmin);
+  user.markModified("roles");
   await user.save();
 
   return {
@@ -312,6 +351,149 @@ export async function setUserPlatformAdmin(
     name: user.name,
     isPlatformAdmin: Boolean(user.isPlatformAdmin),
   };
+}
+
+export type NetworkTableKey =
+  | "workspaces"
+  | "users"
+  | "assessments"
+  | "bookings"
+  | "sheetDownloads";
+
+export type NetworkTableRow = {
+  id: string;
+  title: string;
+  subtitle: string;
+  meta: string;
+  at: string | null;
+};
+
+export async function listNetworkTable(table: NetworkTableKey) {
+  const limit = 100;
+
+  if (table === "workspaces") {
+    const [total, orgs] = await Promise.all([
+      Organization.countDocuments(),
+      Organization.find().sort({ createdAt: -1 }).limit(limit).lean(),
+    ]);
+    const rows: NetworkTableRow[] = orgs.map((org) => ({
+      id: String(org._id),
+      title: org.name,
+      subtitle: org.slug || "",
+      meta: `${org.plan} · ${org.status}`,
+      at:
+        (org as { createdAt?: Date }).createdAt?.toISOString?.() ?? null,
+    }));
+    return { table, total, rows };
+  }
+
+  if (table === "users") {
+    const [total, users] = await Promise.all([
+      User.countDocuments(),
+      User.find().sort({ createdAt: -1 }).limit(limit).lean(),
+    ]);
+    const rows: NetworkTableRow[] = users.map((user) => ({
+      id: String(user._id),
+      title: user.name || user.email,
+      subtitle: user.email,
+      meta: user.isPlatformAdmin ? "Platform admin" : "User",
+      at:
+        (user as { createdAt?: Date }).createdAt?.toISOString?.() ?? null,
+    }));
+    return { table, total, rows };
+  }
+
+  if (table === "assessments") {
+    const [total, docs] = await Promise.all([
+      Assessment.countDocuments(REAL_ASSESSMENT_FILTER).catch(() => 0),
+      Assessment.find(REAL_ASSESSMENT_FILTER)
+        .sort({ updatedAt: -1 })
+        .limit(limit)
+        .lean()
+        .catch(() => []),
+    ]);
+    const rows: NetworkTableRow[] = (
+      docs as Array<{
+        _id: unknown;
+        businessName?: string | null;
+        email?: string | null;
+        status?: string;
+        overallScore?: number | null;
+        updatedAt?: Date;
+        createdAt?: Date;
+      }>
+    ).map((doc) => ({
+      id: String(doc._id),
+      title: doc.businessName || doc.email || "Assessment",
+      subtitle: doc.email || "No email",
+      meta: `${doc.status ?? "unknown"}${
+        typeof doc.overallScore === "number" ? ` · score ${doc.overallScore}` : ""
+      }`,
+      at:
+        doc.updatedAt?.toISOString?.() ??
+        doc.createdAt?.toISOString?.() ??
+        null,
+    }));
+    return { table, total, rows };
+  }
+
+  if (table === "bookings") {
+    const [total, docs] = await Promise.all([
+      Booking.countDocuments(REAL_BOOKING_FILTER).catch(() => 0),
+      Booking.find(REAL_BOOKING_FILTER)
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .lean()
+        .catch(() => []),
+    ]);
+    const rows: NetworkTableRow[] = (
+      docs as Array<{
+        _id: unknown;
+        name?: string;
+        email?: string;
+        company?: string;
+        dayKey?: string;
+        status?: string;
+        createdAt?: Date;
+      }>
+    ).map((doc) => ({
+      id: String(doc._id),
+      title: doc.name || "Guest",
+      subtitle: doc.email || "",
+      meta: `${doc.status ?? "PENDING"}${doc.dayKey ? ` · ${doc.dayKey}` : ""}${
+        doc.company ? ` · ${doc.company}` : ""
+      }`,
+      at: doc.createdAt?.toISOString?.() ?? null,
+    }));
+    return { table, total, rows };
+  }
+
+  const [total, docs] = await Promise.all([
+    SheetDownload.countDocuments().catch(() => 0),
+    SheetDownload.find()
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean()
+      .catch(() => []),
+  ]);
+  const rows: NetworkTableRow[] = (
+    docs as Array<{
+      _id: unknown;
+      name?: string;
+      email?: string;
+      phone?: string;
+      asset?: string;
+      source?: string;
+      createdAt?: Date;
+    }>
+  ).map((doc) => ({
+    id: String(doc._id),
+    title: doc.name || "Lead",
+    subtitle: `${doc.email || ""}${doc.phone ? ` · ${doc.phone}` : ""}`.trim(),
+    meta: doc.asset || doc.source || "PDF unlock",
+    at: doc.createdAt?.toISOString?.() ?? null,
+  }));
+  return { table, total, rows };
 }
 
 export async function getSystemHealth() {
@@ -329,8 +511,8 @@ export async function getSystemHealth() {
     await Promise.all([
       Organization.countDocuments(),
       User.countDocuments(),
-      Assessment.countDocuments().catch(() => 0),
-      Booking.countDocuments().catch(() => 0),
+      Assessment.countDocuments(REAL_ASSESSMENT_FILTER).catch(() => 0),
+      Booking.countDocuments(REAL_BOOKING_FILTER).catch(() => 0),
       SheetDownload.countDocuments().catch(() => 0),
     ]);
 
@@ -358,12 +540,12 @@ export async function getAuditTrail(limit = 40) {
         .limit(take)
         .lean(),
       User.find().sort({ createdAt: -1 }).limit(take).lean(),
-      Booking.find()
+      Booking.find(REAL_BOOKING_FILTER)
         .sort({ createdAt: -1 })
         .limit(Math.ceil(take / 2))
         .lean()
         .catch(() => []),
-      Assessment.find()
+      Assessment.find(REAL_ASSESSMENT_FILTER)
         .sort({ updatedAt: -1 })
         .limit(Math.ceil(take / 2))
         .lean()

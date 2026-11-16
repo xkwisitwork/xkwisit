@@ -40,7 +40,12 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
-export const logout = asyncHandler(async (_req: Request, res: Response) => {
+export const logout = asyncHandler(async (req: Request, res: Response) => {
+  // Best-effort: bump session version so this device’s tokens die everywhere.
+  const userId = req.user?.id;
+  if (userId) {
+    await authService.invalidateSession(userId);
+  }
   clearAuthCookies(res);
   return sendSuccess(res, { ok: true }, 200, "Logged out");
 });
@@ -74,6 +79,16 @@ export const updateAvatar = asyncHandler(async (req: Request, res: Response) => 
   if (!req.user) throw unauthorized();
   const data = await authService.updateAvatar(req.user.id, req.body.avatarUrl);
   return sendSuccess(res, data, 200, "Avatar updated");
+});
+
+export const updateProfile = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw unauthorized();
+  const data = await authService.updateProfile(
+    req.user.id,
+    req.orgId ?? req.user.orgId,
+    req.body,
+  );
+  return sendSuccess(res, data, 200, "Profile updated");
 });
 
 export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {

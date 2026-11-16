@@ -41,7 +41,8 @@ export default function GlobalError({
           <Button
             variant="contained"
             size="lg"
-            leftIcon={<RefreshCw className="h-4 w-4" />}
+            className="!bg-mint !text-white hover:!bg-mint-deep"
+            leftIcon={<RefreshCw className="h-4 w-4" aria-hidden />}
             onClick={reset}
           >
             Try again
@@ -49,8 +50,9 @@ export default function GlobalError({
           <Button
             variant="outlined"
             size="lg"
-            leftIcon={<Home className="h-4 w-4" />}
-            asChild={false}
+            className="!border-mint !text-mint-ink"
+            leftIcon={<Home className="h-4 w-4" aria-hidden />}
+            asChild
           >
             <Link href="/">Go home</Link>
           </Button>

@@ -256,6 +256,7 @@ export function AgencyCommandCenter({
 function SoftCard({
   children,
   className,
+  wrapperClassName,
   index = 0,
   accent,
   href,
@@ -263,14 +264,17 @@ function SoftCard({
 }: {
   children: ReactNode;
   className?: string;
+  /** Grid/width classes for the outer grid item (keep flex/items-* on className only). */
+  wrapperClassName?: string;
   index?: number;
   accent?: boolean;
   href?: string;
   ariaLabel?: string;
 }) {
-  // Grid col-span must live on the motion wrapper (the actual grid item).
+  // Grid col-span / width must live on the motion wrapper (the actual grid item).
+  // Surface-only className — never put items-center on the wrapper or the card shrinks.
   const surface = cn(
-    "min-w-0 h-full overflow-hidden rounded-[1.75rem] border p-5 shadow-[0_18px_44px_-34px_rgba(22,2,74,0.4)]",
+    "min-w-0 h-full w-full overflow-hidden rounded-[1.75rem] border p-5 shadow-[0_18px_44px_-34px_rgba(22,2,74,0.4)]",
     accent
       ? "border-transparent bg-[#16024A] text-white"
       : "border-[#EDE8F7] bg-white",
@@ -286,7 +290,7 @@ function SoftCard({
       initial="hidden"
       animate="show"
       whileHover={{ y: -2, transition: { duration: 0.2 } }}
-      className={cn("min-w-0 h-full", className)}
+      className={cn("min-w-0 h-full w-full", wrapperClassName)}
     >
       {href ? (
         <Link href={href} aria-label={ariaLabel} className={surface}>
@@ -437,7 +441,8 @@ function CapacityBalanceCard({
 
   return (
     <SoftCard
-      className={cn("flex flex-col", className)}
+      className="flex flex-col"
+      wrapperClassName={className}
       index={5}
       href="/team"
       ariaLabel="Open team — capacity balance"
@@ -565,7 +570,11 @@ function DeliveryGaugeCard({
 
   return (
     <SoftCard
-      className={cn("flex flex-col items-center justify-between", className)}
+      className="flex flex-col items-center justify-between"
+      wrapperClassName={cn(
+        "mx-auto w-[98%] laptop:mx-0 laptop:w-full",
+        className,
+      )}
       index={6}
       href="/projects"
       ariaLabel="Open projects — delivery capacity"
@@ -627,7 +636,8 @@ function WorkspaceProfileCard({
 }) {
   return (
     <SoftCard
-      className={cn("flex flex-col", className)}
+      className="flex flex-col"
+      wrapperClassName={className}
       index={7}
       href="/team"
       ariaLabel={`Open team — ${orgName}`}
@@ -685,7 +695,7 @@ function ProjectStackCard({
   const router = useRouter();
 
   return (
-    <SoftCard className={cn("flex flex-col", className)} index={8}>
+    <SoftCard className="flex flex-col" wrapperClassName={className} index={8}>
       <button
         type="button"
         onClick={() => router.push("/projects")}
@@ -781,7 +791,8 @@ function ActivityTransfersCard({
 
   return (
     <SoftCard
-      className={cn("flex flex-col", className)}
+      className="flex flex-col"
+      wrapperClassName={className}
       index={9}
       href="/notifications"
       ariaLabel="Open notifications — recent activity"
@@ -847,7 +858,8 @@ function ActivityTransfersCard({
 function SecurityCard({ className }: { className?: string }) {
   return (
     <SoftCard
-      className={cn("flex min-h-[17.5rem] flex-col", className)}
+      className="flex min-h-[17.5rem] flex-col"
+      wrapperClassName={className}
       index={10}
       href="/settings/security"
       ariaLabel="Open security settings"

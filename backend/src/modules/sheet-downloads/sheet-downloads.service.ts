@@ -3,18 +3,30 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { SheetDownload, type SheetDownloadDocument } from "../../models/SheetDownload.js";
-import { notFound } from "../../utils/errors.js";
+import { badRequest, notFound } from "../../utils/errors.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PDF_FILENAME = "XKWISIT_BUSINESS_GROWTH_STRATEGY.pdf";
-const PDF_PATH = path.resolve(
-  __dirname,
-  "../../../assets/downloads",
-  PDF_FILENAME,
-);
+const DOWNLOADS_DIR = path.resolve(__dirname, "../../../assets/downloads");
 
 /** Download links stay valid for a day after the form is submitted. */
 const DOWNLOAD_TTL_MS = 24 * 60 * 60 * 1000;
+
+const DOWNLOAD_ASSETS = {
+  "growth-strategy": {
+    filename: "XKWISIT_BUSINESS_GROWTH_STRATEGY.pdf",
+    source: "monday-sheet",
+  },
+  "launch-brand-playbook": {
+    filename: "XKWISIT_LAUNCH_BRAND_PLAYBOOK.pdf",
+    source: "launch-brand-playbook",
+  },
+  "ecommerce-cro-blueprint": {
+    filename: "XKWISIT_ECOMMERCE_CRO_BLUEPRINT.pdf",
+    source: "ecommerce-cro-blueprint",
+  },
+} as const;
+
+export type DownloadAssetKey = keyof typeof DOWNLOAD_ASSETS;
 
 function toSheetDownload(doc: SheetDownloadDocument) {
   return {
@@ -34,17 +46,29 @@ export async function createSheetDownload(input: {
   name: string;
   email: string;
   phone: string;
+  assetKey?: string;
 }) {
+  const key = (input.assetKey ?? "growth-strategy") as DownloadAssetKey;
+  const asset = DOWNLOAD_ASSETS[key];
+  if (!asset) {
+    throw badRequest("Unknown download asset.");
+  }
+
+  const pdfPath = path.join(DOWNLOADS_DIR, asset.filename);
+  if (!existsSync(pdfPath)) {
+    throw notFound("Sheet file is missing on the server.");
+  }
+
   const doc = await SheetDownload.create({
     name: input.name.trim(),
     email: input.email.toLowerCase().trim(),
     phone: input.phone.trim(),
-    asset: PDF_FILENAME,
-    source: "monday-sheet",
+    asset: asset.filename,
+    source: asset.source,
   });
 
   console.log(
-    `[sheet-download] growth sheet claimed: ${doc.email} ${doc.phone}`,
+    `[sheet-download] ${asset.source} claimed: ${doc.email} ${doc.phone}`,
   );
 
   return toSheetDownload(doc);
@@ -72,13 +96,15 @@ export async function getDownloadableSheet(id: string) {
     throw notFound("Download link expired. Submit the form again.");
   }
 
-  if (!existsSync(PDF_PATH)) {
+  const filename = doc.asset || DOWNLOAD_ASSETS["growth-strategy"].filename;
+  const pdfPath = path.join(DOWNLOADS_DIR, filename);
+  if (!existsSync(pdfPath)) {
     throw notFound("Sheet file is missing on the server.");
   }
 
   return {
     record: toSheetDownload(doc),
-    filename: PDF_FILENAME,
-    stream: createReadStream(PDF_PATH),
+    filename,
+    stream: createReadStream(pdfPath),
   };
 }

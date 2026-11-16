@@ -1,5 +1,6 @@
 import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
+import type { BotShieldFields } from "@/lib/bot-shield/types";
 
 export type CreateBookingPayload = {
   name: string;
@@ -8,7 +9,7 @@ export type CreateBookingPayload = {
   dayKey: string;
   slotId: string;
   timezone?: string;
-};
+} & BotShieldFields;
 
 export type Booking = {
   id: string;

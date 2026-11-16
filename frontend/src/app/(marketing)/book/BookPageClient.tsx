@@ -12,10 +12,12 @@ import {
   bookFormShellClassName,
 } from "@/components/marketing/pages/book/BookDash";
 import { BookPageBody } from "@/components/marketing/pages/book/BookPageBody";
+import { BotShieldFields } from "@/components/security/BotShieldFields";
 import { buttonVariants } from "@/components/ui/Button/variants";
 import { Container } from "@/components/layout/Container";
 import { ROUTES, siteConfig } from "@/config/site";
 import { createBooking } from "@/features/booking/api/booking.api";
+import { useBotShield } from "@/lib/bot-shield/useBotShield";
 import { cn } from "@/lib/utils/cn";
 
 const LAGOS_TZ = "Africa/Lagos";
@@ -83,6 +85,12 @@ function BookingForm() {
   const [email, setEmail] = useState("");
   const [company, setCompany] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const {
+    ensureReady: ensureBotShield,
+    refresh: refreshBotShield,
+    honeypotRef,
+  } = useBotShield(true);
 
   useEffect(() => {
     if (!dayKey && days[0]) setDayKey(days[0].key);
@@ -102,38 +110,43 @@ function BookingForm() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!selectedDay || !slotId || !name || !email) return;
+    setFormError(null);
     setSubmitting(true);
     try {
+      const shield = await ensureBotShield();
       const booking = await createBooking({
         name,
         email,
         company,
         dayKey: selectedDay.key,
         slotId,
-        timezone: LAGOS_TZ });
+        timezone: LAGOS_TZ,
+        ...shield,
+      });
       const params = new URLSearchParams({
         id: booking.id,
         name: booking.name,
         email: booking.email,
         company: booking.company,
         day: booking.dayKey,
-        slot: booking.slotId });
+        slot: booking.slotId,
+      });
       router.push(`${ROUTES.book}/confirm?${params.toString()}`);
-    } catch {
-      const params = new URLSearchParams({
-        name,
-        email,
-        company,
-        day: selectedDay.key,
-        slot: slotId });
-      router.push(`${ROUTES.book}/confirm?${params.toString()}`);
+    } catch (err) {
+      void refreshBotShield().catch(() => {});
+      setFormError(
+        err instanceof Error
+          ? err.message
+          : "Could not book that slot. Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <form onSubmit={onSubmit} className={cn(bookFormShellClassName, "min-w-0")}>
+    <form onSubmit={onSubmit} className={cn(bookFormShellClassName, "relative min-w-0")}>
+      <BotShieldFields honeypotRef={honeypotRef} />
       <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-1">
         <p className="font-display text-[1.15rem] font-bold text-[#16024A]">Pick a slot</p>
         <p className="rounded-full bg-[#F4F0FF] px-3 py-1 text-[0.7rem] font-semibold tabular-nums text-[#3B05C4]">
@@ -225,6 +238,15 @@ function BookingForm() {
           autoComplete="organization"
         />
       </div>
+
+      {formError ? (
+        <p
+          className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-[0.84rem] leading-relaxed text-red-700"
+          role="alert"
+        >
+          {formError}
+        </p>
+      ) : null}
 
       <button
         type="submit"

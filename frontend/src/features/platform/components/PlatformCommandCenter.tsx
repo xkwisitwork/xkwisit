@@ -14,6 +14,7 @@ import {
   ClipboardCheck,
   FileDown,
   Loader2,
+  Footprints,
   Shield,
   Users,
 } from "lucide-react";
@@ -36,6 +37,7 @@ import { cn } from "@/lib/utils/cn";
 
 import type { PlatformAuditEvent, PlatformStats } from "../api/platform.api";
 import { PlatformSubnav } from "./PlatformShell";
+import { VisitorActivityPulse } from "./VisitorActivityPulse";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -86,9 +88,15 @@ const opsLinks = [
   },
   {
     href: "/sheet-downloads",
-    title: "Growth sheet leads",
+    title: "PDF download leads",
     body: "PDF unlocks from the marketing site",
     Icon: FileDown,
+  },
+  {
+    href: "/platform/activity",
+    title: "Visitor activity",
+    body: "Clicks, downloads, and time on site",
+    Icon: Footprints,
   },
 ] as const;
 
@@ -302,6 +310,16 @@ export function PlatformCommandCenter({
           </SoftCard>
         </div>
       </div>
+
+      <motion.div
+        className="min-w-0"
+        initial="hidden"
+        animate="show"
+        variants={fadeUp}
+        custom={4.5}
+      >
+        <VisitorActivityPulse />
+      </motion.div>
 
       {/* Bottom bento — compact equal-height row, full rail width */}
       <div className="grid min-w-0 items-stretch gap-3 tablet:grid-cols-12">

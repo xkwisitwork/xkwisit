@@ -1,20 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
   MessageSquareOff,
   Megaphone,
+  Pointer,
   Shuffle,
   Target,
   Users,
+  X,
 } from "lucide-react";
 
 import { Container } from "@/components/layout/Container";
 import { buttonVariants } from "@/components/ui/Button/variants";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/Dialog";
 import { ROUTES } from "@/config/site";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils/cn";
 
 type Symptom = {
@@ -84,12 +94,94 @@ const symptoms: Symptom[] = [
   },
 ];
 
+function SymptomDetail({
+  active,
+  className,
+}: {
+  active: Symptom;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "relative flex flex-col overflow-hidden rounded-[1.6rem] border border-neutral-400/70 bg-white p-6 mobile-sm:p-8",
+        className,
+      )}
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-mint/15 blur-3xl"
+      />
+
+      <p className="relative font-display text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-mint">
+        What’s probably stuck
+      </p>
+      <h3 className="relative mt-3 font-display text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-tight text-neutral-900">
+        {active.constraint}
+      </h3>
+
+      <div className="relative mt-5">
+        <div className="mb-1.5 flex justify-between text-200">
+          <span className="text-neutral-600">How healthy this looks</span>
+          <span className="font-semibold tabular-nums text-neutral-900">
+            {active.score}/100
+          </span>
+        </div>
+        <div className="h-2.5 overflow-hidden rounded-full bg-neutral-200">
+          <motion.div
+            className="h-full rounded-full bg-mint"
+            initial={{ width: 0 }}
+            animate={{ width: `${active.score}%` }}
+            transition={{ duration: 0.55 }}
+          />
+        </div>
+      </div>
+
+      <p className="relative mt-6 text-300 leading-relaxed text-neutral-600 mobile-sm:text-400">
+        {active.why}
+      </p>
+
+      <div className="relative mt-6 rounded-2xl bg-mint-soft/70 px-4 py-4">
+        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-mint">
+          First move
+        </p>
+        <p className="mt-1.5 text-300 font-medium leading-relaxed text-mint-ink">
+          {active.firstMove}
+        </p>
+      </div>
+
+      <Link
+        href={ROUTES.growthAssessment}
+        className={cn(
+          buttonVariants({ variant: "contained", size: "lg" }),
+          "relative !mt-7 inline-flex min-h-12 w-full justify-center !rounded-full border-0 !bg-mint px-7 !text-white hover:!bg-mint-deep tablet:w-auto",
+        )}
+      >
+        Check my business free
+        <ArrowRight className="h-4 w-4" aria-hidden />
+      </Link>
+    </div>
+  );
+}
+
 /**
  * Pain recognition - tap a familiar problem, get the broken part and first move.
+ * Mobile: detail opens in a modal. Tablet+: inline panel beside the list.
  */
 export function ConstraintOracle() {
+  const isTabletUp = useMediaQuery("(min-width: 768px)");
   const [activeId, setActiveId] = useState(symptoms[0]!.id);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const active = symptoms.find((s) => s.id === activeId) ?? symptoms[0]!;
+
+  useEffect(() => {
+    if (isTabletUp) setMobileOpen(false);
+  }, [isTabletUp]);
+
+  function selectSymptom(id: string) {
+    setActiveId(id);
+    if (!isTabletUp) setMobileOpen(true);
+  }
 
   return (
     <section className="relative overflow-x-clip bg-white">
@@ -121,18 +213,24 @@ export function ConstraintOracle() {
                 <li key={s.id}>
                   <button
                     type="button"
-                    onClick={() => setActiveId(s.id)}
+                    onClick={() => selectSymptom(s.id)}
+                    aria-haspopup={!isTabletUp ? "dialog" : undefined}
+                    aria-pressed={selected}
                     className={cn(
-                      "flex w-full items-start gap-3 rounded-[1.25rem] border px-4 py-3.5 text-left transition-all",
+                      "group flex w-full cursor-pointer items-start gap-3 rounded-[1.25rem] border bg-white px-4 py-3.5 text-left transition-all duration-200",
+                      "hover:-translate-y-0.5 hover:border-[#3B05C4]/40",
+                      "active:translate-y-0 active:scale-[0.99]",
                       selected
-                        ? "border-mint bg-white shadow-[0_16px_40px_-28px_rgba(37,99,235,0.45)]"
-                        : "border-transparent bg-white/60 hover:border-neutral-400 hover:bg-white",
+                        ? "border-[#3B05C4]/55 shadow-[0_0_0_3px_rgba(59,5,196,0.16),0_14px_34px_-14px_rgba(59,5,196,0.55)]"
+                        : "border-[#16024A]/14 shadow-[0_8px_20px_-16px_rgba(22,2,74,0.25)] hover:shadow-[0_0_0_3px_rgba(59,5,196,0.1),0_12px_28px_-14px_rgba(59,5,196,0.4)]",
                     )}
                   >
                     <span
                       className={cn(
-                        "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl",
-                        selected ? "bg-mint text-white" : "bg-mint-soft text-mint",
+                        "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-colors",
+                        selected
+                          ? "bg-mint text-white"
+                          : "bg-mint-soft text-mint group-hover:bg-mint group-hover:text-white",
                       )}
                     >
                       <s.Icon className="h-4 w-4" aria-hidden />
@@ -145,77 +243,64 @@ export function ConstraintOracle() {
                         {s.hint}
                       </span>
                     </span>
+                    <Pointer
+                      aria-hidden
+                      className={cn(
+                        "mt-1.5 h-4 w-4 shrink-0 transition",
+                        selected
+                          ? "text-[#3B05C4]"
+                          : "text-[#3B05C4]/40 group-hover:text-[#3B05C4]",
+                      )}
+                    />
                   </button>
                 </li>
               );
             })}
           </ul>
 
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={active.id}
-              initial={{ opacity: 0, x: 12 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -8 }}
-              transition={{ duration: 0.28 }}
-              className="relative flex flex-col overflow-hidden rounded-[1.6rem] border border-neutral-400/70 bg-white p-6 mobile-sm:p-8"
-            >
-              <div
-                aria-hidden
-                className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-mint/15 blur-3xl"
-              />
-
-              <p className="relative font-display text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-mint">
-                What’s probably stuck
-              </p>
-              <h3 className="relative mt-3 font-display text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-tight text-neutral-900">
-                {active.constraint}
-              </h3>
-
-              <div className="relative mt-5">
-                <div className="mb-1.5 flex justify-between text-200">
-                  <span className="text-neutral-600">How healthy this looks</span>
-                  <span className="font-semibold tabular-nums text-neutral-900">
-                    {active.score}/100
-                  </span>
-                </div>
-                <div className="h-2.5 overflow-hidden rounded-full bg-neutral-200">
-                  <motion.div
-                    className="h-full rounded-full bg-mint"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${active.score}%` }}
-                    transition={{ duration: 0.55 }}
-                  />
-                </div>
-              </div>
-
-              <p className="relative mt-6 text-300 leading-relaxed text-neutral-600 mobile-sm:text-400">
-                {active.why}
-              </p>
-
-              <div className="relative mt-6 rounded-2xl bg-mint-soft/70 px-4 py-4">
-                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-mint">
-                  First move
-                </p>
-                <p className="mt-1.5 text-300 font-medium leading-relaxed text-mint-ink">
-                  {active.firstMove}
-                </p>
-              </div>
-
-              <Link
-                href={ROUTES.growthAssessment}
-                className={cn(
-                  buttonVariants({ variant: "contained", size: "lg" }),
-                  "relative !mt-7 inline-flex min-h-12 w-full justify-center !rounded-full border-0 !bg-mint px-7 !text-white hover:!bg-mint-deep tablet:w-auto",
-                )}
+          {/* Tablet/desktop: inline detail panel */}
+          <div className="hidden tablet:block">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={active.id}
+                initial={{ opacity: 0, x: 12 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -8 }}
+                transition={{ duration: 0.28 }}
               >
-                Check my business free
-                <ArrowRight className="h-4 w-4" aria-hidden />
-              </Link>
-            </motion.div>
-          </AnimatePresence>
+                <SymptomDetail active={active} />
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
       </Container>
+
+      {/* Mobile only: detail as modal */}
+      <Dialog open={mobileOpen && !isTabletUp} onOpenChange={setMobileOpen}>
+        <DialogContent
+          size="md"
+          hideCloseButton
+          className="w-[calc(100%-1.5rem)] max-w-md border-0 bg-transparent p-0 shadow-none"
+          overlayClassName="bg-[#16024A]/45 backdrop-blur-[4px] tablet:hidden"
+        >
+          <DialogHeader className="sr-only">
+            <DialogTitle>{active.constraint}</DialogTitle>
+            <DialogDescription>{active.why}</DialogDescription>
+          </DialogHeader>
+
+          <div className="relative">
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => setMobileOpen(false)}
+              className="absolute right-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-white/95 text-[#16024A] shadow-sm ring-1 ring-[#16024A]/10"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <SymptomDetail active={active} className="shadow-[0_28px_60px_-28px_rgba(22,2,74,0.45)]" />
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

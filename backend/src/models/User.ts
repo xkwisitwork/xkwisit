@@ -64,6 +64,11 @@ const userSchema = new Schema(
     lockoutLevel: { type: Number, default: 0 },
     /** When set and in the future, login is blocked. */
     lockUntil: { type: Date, default: null },
+    /**
+     * Single-device session stamp. Bumped on every successful login (and logout).
+     * JWTs carry `sv`; mismatch means another device took over the session.
+     */
+    sessionVersion: { type: Number, default: 0 },
   },
   { timestamps: true },
 );

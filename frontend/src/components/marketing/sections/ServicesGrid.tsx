@@ -22,17 +22,17 @@ import { cn } from "@/lib/utils/cn";
 const scenes: Record<string, { src: string; alt: string; position: string }> = {
   technology: {
     src: "/images/desks/technology.jpg",
-    alt: "Laptop and phone showing a professional website with order and sales notifications",
+    alt: "Mobile app mockup with balance, transfers, and payment controls on a yellow background",
     position: "object-center",
   },
   growth: {
     src: "/images/desks/growth.jpg",
-    alt: "Social media manager planning content and posting times on her phone",
-    position: "object-[center_20%]",
+    alt: "Woman outdoors looking at her phone under a clear blue sky",
+    position: "object-[center_25%]",
   },
   brand: {
     src: "/images/desks/brand.jpg",
-    alt: "Podcast and content studio with cameras, lights, and interview chairs",
+    alt: "Close-up of a phone home screen showing a clear branded Elevare app icon",
     position: "object-center",
   },
   ai: {
@@ -42,7 +42,7 @@ const scenes: Record<string, { src: string; alt: string; position: string }> = {
   },
   intelligence: {
     src: "/images/desks/intelligence.jpg",
-    alt: "Revenue dashboard with channel breakdown and sales overview charts",
+    alt: "Sales analytics dashboard with revenue KPIs, targets, and store performance charts",
     position: "object-[center_30%]",
   },
 };
@@ -66,14 +66,17 @@ export function ServicesGrid() {
           <p className="font-display text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-[#3B05C4]">
             What we can do for you
           </p>
-          <h2 className="mt-3 text-balance font-display text-[clamp(2.1rem,4.4vw,3.35rem)] font-bold leading-[1.02] tracking-tight text-[#16024A]">
-            Five desks.{" "}
-            <span className="tablet:whitespace-nowrap">One goal: more profit.</span>
+          <h2 className="mt-3 font-display text-[1.7rem] font-bold leading-[1.15] tracking-tight text-[#16024A] mobile-md:text-[1.9rem] tablet:text-[clamp(2.1rem,4.4vw,3.35rem)] tablet:leading-[1.05]">
+            <span className="block">Five functions.</span>
+            <span className="mt-1 block">
+              One objective:{" "}
+              <span className="block mobile-md:inline">profitable growth.</span>
+            </span>
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-[0.98rem] leading-relaxed text-neutral-600">
-            Website and payments. Getting customers. Brand that is clear. AI your team will
-            use. Numbers you can trust. Start with the desk that is blocking sales today -
-            not every desk at once.
+            We build web/mobile apps and payment systems. Customer acquisition is also a
+            priority. Brand that is clear. AI your team will use. Analysis you can trust.
+            Start with what is leaking at the moment.
           </p>
         </div>
 

@@ -30,7 +30,8 @@ export default function MarketingError({
         <Button
           variant="contained"
           size="lg"
-          leftIcon={<RefreshCw className="h-4 w-4" />}
+          className="!bg-mint !text-white hover:!bg-mint-deep"
+          leftIcon={<RefreshCw className="h-4 w-4" aria-hidden />}
           onClick={reset}
         >
           Try again

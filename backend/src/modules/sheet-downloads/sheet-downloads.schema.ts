@@ -9,6 +9,14 @@ export const createSheetDownloadSchema = z.object({
     .max(24)
     .regex(/^[+\d\s()-]+$/, "Only digits, spaces, and +, -, ( ) allowed.")
     .trim(),
+  assetKey: z
+    .enum([
+      "growth-strategy",
+      "launch-brand-playbook",
+      "ecommerce-cro-blueprint",
+    ])
+    .optional()
+    .default("growth-strategy"),
 });
 
 export const sheetDownloadIdParamsSchema = z.object({

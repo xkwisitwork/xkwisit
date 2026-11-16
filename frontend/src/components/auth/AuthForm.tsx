@@ -20,14 +20,29 @@ import {
   Loader2,
   LogIn,
   ScanSearch,
+  Sparkles,
   UserPlus,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { LogoFull } from "@/components/marketing/Logo";
+import { BotShieldFields } from "@/components/security/BotShieldFields";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/Dialog";
 import { ROUTES, siteConfig } from "@/config/site";
-import { loginAccount, registerAccount } from "@/features/auth/api/auth.api";
+import {
+  loginAccount,
+  registerAccount,
+  requestPasswordReset,
+} from "@/features/auth/api/auth.api";
 import { ApiRequestError } from "@/lib/api/errors";
+import { useBotShield } from "@/lib/bot-shield/useBotShield";
+import { consumeSessionReplacedFlag } from "@/lib/auth/sessionConflict";
 import { cn } from "@/lib/utils/cn";
 
 import { AuthHeroPanel } from "./AuthHeroPanel";
@@ -251,6 +266,29 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
   // Chrome won't autofill readonly fields — unlock on first focus.
   const [fieldsLocked, setFieldsLocked] = useState(mode === "login");
   const [justLoggedOut, setJustLoggedOut] = useState(false);
+  /** Login lockout: 3 failed passwords → 5 minute lock. */
+  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(
+    null,
+  );
+  const [lockUntilMs, setLockUntilMs] = useState<number | null>(null);
+  const [lockCountdown, setLockCountdown] = useState("");
+  const [shakeKey, setShakeKey] = useState(0);
+  const loginLocked =
+    mode === "login" &&
+    typeof lockUntilMs === "number" &&
+    lockUntilMs > Date.now();
+  const needsBotShield =
+    mode === "login" ||
+    mode === "register" ||
+    mode === "forgot" ||
+    mode === "reset";
+  const {
+    ensureReady: ensureBotShield,
+    refresh: refreshBotShield,
+    honeypotRef,
+  } = useBotShield(needsBotShield);
+  const [loginSuccessOpen, setLoginSuccessOpen] = useState(false);
+  const [postLoginHref, setPostLoginHref] = useState<string>(ROUTES.dashboard);
   const meta = copy[mode];
   const isSplit = mode === "login" || mode === "register";
   const back = useAuthBackHref();
@@ -265,26 +303,119 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
     window.location.assign(destination);
   }
 
-  useEffect(() => {
-    const loggedOut =
-      mode === "login" &&
-      typeof window !== "undefined" &&
-      new URLSearchParams(window.location.search).get("loggedOut") === "1";
+  function finishLoginSuccess() {
+    setLoginSuccessOpen(false);
+    enterAuthenticatedApp(postLoginHref);
+  }
 
-    setJustLoggedOut(loggedOut);
+  useEffect(() => {
+    if (!loginSuccessOpen) return;
+    const destination = postLoginHref;
+    const timer = window.setTimeout(() => {
+      setLoginSuccessOpen(false);
+      queryClient.clear();
+      window.location.assign(destination);
+    }, 2600);
+    return () => window.clearTimeout(timer);
+  }, [loginSuccessOpen, postLoginHref, queryClient]);
+
+  useEffect(() => {
+    const params =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search)
+        : null;
+    const loggedOut = mode === "login" && params?.get("loggedOut") === "1";
+    const sessionReplaced =
+      mode === "login" &&
+      (params?.get("sessionReplaced") === "1" || consumeSessionReplacedFlag());
+
+    setJustLoggedOut(Boolean(loggedOut));
     setEmail("");
     setPassword("");
     setConfirmPassword("");
     setShowPassword(false);
     setShowConfirmPassword(false);
     setError(null);
+    setRemainingAttempts(null);
+    setLockUntilMs(null);
+    setLockCountdown("");
     setFieldNonce((n) => n + 1);
     setFieldsLocked(mode === "login");
 
-    if (loggedOut) {
+    if (sessionReplaced) {
+      const msg =
+        "You were signed out because this account signed in on another device.";
+      setError(msg);
+      toast.message(msg);
+    }
+
+    if (loggedOut || sessionReplaced) {
       window.history.replaceState({}, "", "/login");
     }
   }, [mode]);
+
+  useEffect(() => {
+    if (lockUntilMs == null || lockUntilMs <= Date.now()) {
+      if (lockUntilMs != null && lockUntilMs <= Date.now()) {
+        setLockUntilMs(null);
+        setLockCountdown("");
+        setRemainingAttempts(null);
+        setError(null);
+      }
+      return;
+    }
+
+    const until = lockUntilMs;
+
+    function tick() {
+      const ms = Math.max(0, until - Date.now());
+      if (ms <= 0) {
+        setLockUntilMs(null);
+        setLockCountdown("");
+        setRemainingAttempts(null);
+        setError(null);
+        return;
+      }
+      const totalSec = Math.ceil(ms / 1000);
+      const mins = Math.floor(totalSec / 60);
+      const secs = totalSec % 60;
+      setLockCountdown(
+        mins > 0
+          ? `${mins}:${secs.toString().padStart(2, "0")}`
+          : `${secs}s`,
+      );
+    }
+
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [lockUntilMs]);
+
+  function applyLoginFailure(err: unknown) {
+    const apiErr = err instanceof ApiRequestError ? err : null;
+    const message =
+      apiErr?.message ??
+      (err instanceof Error ? err.message : "Something went wrong. Please try again.");
+
+    const remainingRaw = apiErr?.fieldErrors.remainingAttempts;
+    const lockRaw = apiErr?.fieldErrors.lockUntil;
+    if (remainingRaw != null && remainingRaw !== "") {
+      const n = Number(remainingRaw);
+      setRemainingAttempts(Number.isFinite(n) ? n : null);
+    }
+    if (lockRaw) {
+      const until = Date.parse(lockRaw);
+      if (Number.isFinite(until)) setLockUntilMs(until);
+    } else if (apiErr?.isRateLimited || apiErr?.status === 429) {
+      setLockUntilMs(Date.now() + 5 * 60 * 1000);
+      setRemainingAttempts(0);
+    }
+
+    setError(message);
+    setPassword("");
+    setShakeKey((k) => k + 1);
+    toast.error(message);
+  }
 
   // Scrub bogus autofill: password managers sometimes drop a password into Email.
   useEffect(() => {
@@ -309,10 +440,16 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
     };
   }, [mode, fieldNonce, justLoggedOut]);
 
-  async function establishSession(credentials: { email: string; password: string }) {
+  async function establishSession(input: {
+    email: string;
+    accessToken: string;
+    refreshToken?: string;
+  }) {
     const result = await signIn("credentials", {
-      email: credentials.email,
-      password: credentials.password,
+      email: input.email,
+      accessToken: input.accessToken,
+      refreshToken: input.refreshToken ?? "",
+      // Password omitted on purpose — backend already issued these tokens.
       redirect: false,
     });
 
@@ -353,6 +490,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
     if (stepError) throw new Error(stepError);
 
     const { firstName, lastName } = splitFullName(name);
+    const shield = await ensureBotShield();
     const created = await registerAccount({
       email: email.trim(),
       password,
@@ -361,8 +499,13 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
       lastName,
       companyName: company.trim(),
       phone: normalizePhone(phone),
+      ...shield,
     });
-    await establishSession({ email: email.trim(), password });
+    await establishSession({
+      email: email.trim(),
+      accessToken: created.accessToken,
+      refreshToken: created.refreshToken,
+    });
     toast.success("Workspace created");
     enterAuthenticatedApp(
       created.user.isPlatformAdmin ? "/platform" : ROUTES.dashboard,
@@ -372,6 +515,17 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (mode === "login" && loginLocked) {
+      const lockedMsg =
+        lockCountdown
+          ? `Account locked. Try again in ${lockCountdown}.`
+          : "Account locked. Try again in a few minutes.";
+      setError(lockedMsg);
+      setShakeKey((k) => k + 1);
+      toast.error(lockedMsg);
+      return;
+    }
 
     if (mode === "register") {
       const stepError = validateRegisterStep(registerStep);
@@ -395,17 +549,30 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
       }
 
       if (mode === "login") {
-        const loggedIn = await loginAccount({ email: email.trim(), password });
-        await establishSession({ email: email.trim(), password });
-        toast.success("Welcome back");
-        enterAuthenticatedApp(
+        const shield = await ensureBotShield();
+        const loggedIn = await loginAccount({
+          email: email.trim(),
+          password,
+          ...shield,
+        });
+        setRemainingAttempts(null);
+        setLockUntilMs(null);
+        await establishSession({
+          email: email.trim(),
+          accessToken: loggedIn.accessToken,
+          refreshToken: loggedIn.refreshToken,
+        });
+        setPostLoginHref(
           loggedIn.user.isPlatformAdmin ? "/platform" : ROUTES.dashboard,
         );
+        setLoading(false);
+        setLoginSuccessOpen(true);
         return;
       }
 
       if (mode === "forgot") {
-        await apiForgot(email.trim());
+        const shield = await ensureBotShield();
+        await requestPasswordReset({ email: email.trim(), ...shield });
         toast.success("If that email exists, a reset link was sent");
         router.push(ROUTES.login);
         return;
@@ -414,20 +581,26 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
       toast.message("This flow isn’t wired yet");
       setLoading(false);
     } catch (err) {
-      const message =
-        err instanceof ApiRequestError
-          ? err.message
-          : err instanceof Error
+      void refreshBotShield().catch(() => {});
+      if (mode === "login") {
+        applyLoginFailure(err);
+      } else {
+        const message =
+          err instanceof ApiRequestError
             ? err.message
-            : "Something went wrong. Please try again.";
-      setError(message);
-      toast.error(message);
+            : err instanceof Error
+              ? err.message
+              : "Something went wrong. Please try again.";
+        setError(message);
+        toast.error(message);
+      }
       setLoading(false);
     }
   }
 
   const registerFields = (
-    <form onSubmit={onSubmit} className="mx-auto w-full max-w-[24rem] space-y-5">
+    <form onSubmit={onSubmit} className="relative mx-auto w-full max-w-[24rem] space-y-5">
+      <BotShieldFields honeypotRef={honeypotRef} />
       <RegisterStepProgress step={registerStep} />
 
       <div className="relative min-h-[8.5rem] overflow-visible">
@@ -614,9 +787,21 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
     ) : (
       <form
         onSubmit={onSubmit}
-        className="mx-auto w-full max-w-[24rem] space-y-4"
+        className="relative mx-auto w-full max-w-[24rem] space-y-4"
         autoComplete={justLoggedOut || mode !== "login" ? "off" : "on"}
       >
+        <BotShieldFields honeypotRef={honeypotRef} />
+        <motion.div
+          key={mode === "login" ? `shake-${shakeKey}` : "fields"}
+          initial={false}
+          animate={
+            mode === "login" && shakeKey > 0 && !reduce
+              ? { x: [0, -10, 10, -8, 8, -5, 5, 0] }
+              : { x: 0 }
+          }
+          transition={{ duration: 0.45, ease: "easeInOut" }}
+          className="space-y-4"
+        >
         {mode === "login" || mode === "forgot" || mode === "verify" ? (
           <label className="block space-y-1.5">
             <span className="block text-[0.78rem] font-semibold text-[#16024A]">
@@ -633,7 +818,8 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onFocus={() => setFieldsLocked(false)}
-              readOnly={mode === "login" && fieldsLocked}
+              readOnly={(mode === "login" && fieldsLocked) || loginLocked}
+              disabled={loginLocked}
               autoComplete={justLoggedOut ? "off" : "email"}
               placeholder="you@company.com"
               required
@@ -643,12 +829,23 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
 
         {mode === "login" || mode === "reset" ? (
           <div className="space-y-1.5">
-            <label
-              htmlFor="login-password"
-              className="block text-[0.78rem] font-semibold text-[#16024A]"
-            >
-              {mode === "reset" ? "New password" : "Password"}
-            </label>
+            <div className="flex items-center justify-between gap-2">
+              <label
+                htmlFor="login-password"
+                className="block text-[0.78rem] font-semibold text-[#16024A]"
+              >
+                {mode === "reset" ? "New password" : "Password"}
+              </label>
+              {mode === "login" &&
+              remainingAttempts != null &&
+              remainingAttempts > 0 &&
+              !loginLocked ? (
+                <span className="text-[0.72rem] font-medium text-amber-700">
+                  {remainingAttempts} attempt
+                  {remainingAttempts === 1 ? "" : "s"} left
+                </span>
+              ) : null}
+            </div>
             <div className="relative">
               <AuthInput
                 key={`password-${mode}-${fieldNonce}`}
@@ -661,7 +858,8 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onFocus={() => setFieldsLocked(false)}
-                readOnly={mode === "login" && fieldsLocked}
+                readOnly={(mode === "login" && fieldsLocked) || loginLocked}
+                disabled={loginLocked}
                 autoComplete={
                   justLoggedOut
                     ? "off"
@@ -675,7 +873,8 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3.5 top-1/2 z-10 -translate-y-1/2 rounded-xl p-2 text-[#8B849E] transition-colors hover:bg-white/60 hover:text-mint"
+                disabled={loginLocked}
+                className="absolute right-3.5 top-1/2 z-10 -translate-y-1/2 rounded-xl p-2 text-[#8B849E] transition-colors hover:bg-white/60 hover:text-mint disabled:opacity-40"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? (
@@ -718,16 +917,28 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
             role="alert"
           >
             {error}
+            {loginLocked && lockCountdown ? (
+              <span className="mt-1 block font-semibold">
+                Unlock in {lockCountdown}
+              </span>
+            ) : null}
           </p>
         ) : null}
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || loginLocked}
           className={cn(primaryBtnClass, "mt-1 w-full flex-none")}
         >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : meta.submit}
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : loginLocked ? (
+            lockCountdown ? `Locked · ${lockCountdown}` : "Account locked"
+          ) : (
+            meta.submit
+          )}
         </button>
+        </motion.div>
       </form>
     );
 
@@ -787,7 +998,51 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           { href: ROUTES.register, label: "Create account", Icon: UserPlus },
         ];
 
+  const loginSuccessModal = (
+    <Dialog
+      open={loginSuccessOpen}
+      onOpenChange={(open) => {
+        if (!open) finishLoginSuccess();
+      }}
+    >
+      <DialogContent
+        size="sm"
+        hideCloseButton
+        className="border-[#E7DEFF] bg-white p-6 text-center mobile-sm:p-7"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
+        <DialogHeader className="items-center space-y-3 text-center">
+          <motion.div
+            initial={reduce ? false : { scale: 0.7, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 260, damping: 18 }}
+            className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-mint text-white shadow-[0_16px_36px_-18px_rgba(59,5,196,0.65)]"
+          >
+            <Sparkles className="h-6 w-6" aria-hidden />
+          </motion.div>
+          <DialogTitle className="font-display text-[1.25rem] font-bold leading-snug text-[#16024A]">
+            Congratulations, enjoy the XKWISIT intelligence.
+          </DialogTitle>
+          <DialogDescription className="text-[0.88rem] leading-relaxed text-[#5C5478]">
+            Taking you into Mission Control…
+          </DialogDescription>
+        </DialogHeader>
+        <button
+          type="button"
+          onClick={finishLoginSuccess}
+          className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-mint px-5 text-[0.9rem] font-semibold text-white transition hover:bg-mint-deep"
+        >
+          Continue
+          <ArrowRight className="h-4 w-4" aria-hidden />
+        </button>
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
+    <>
+    {loginSuccessModal}
     <motion.div
       initial={reduce ? false : { opacity: 0, y: 16, scale: 0.985 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -846,17 +1101,36 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
                       "2.75rem 2.1rem 2.75rem 2.1rem / 2.4rem 2.75rem 2.1rem 2.75rem",
                   }}
                 >
-                  {cloudLinks.map(({ href, label, Icon }) => (
-                    <Link
-                      key={`${href}-${label}`}
-                      href={href}
-                      title={label}
-                      aria-label={label}
-                      className="grid h-12 w-12 place-items-center rounded-full bg-white text-[#16024A] shadow-[0_10px_24px_-14px_rgba(22,2,74,0.45)] ring-1 ring-[#ECEAF2] transition-transform hover:scale-105 hover:text-mint"
-                    >
-                      <Icon className="h-4 w-4" aria-hidden />
-                    </Link>
-                  ))}
+                  {cloudLinks.map(({ href, label, Icon }) => {
+                    const lockCreateAccount =
+                      mode === "login" &&
+                      loading &&
+                      href === ROUTES.register;
+                    if (lockCreateAccount) {
+                      return (
+                        <span
+                          key={`${href}-${label}`}
+                          title="Signing in…"
+                          aria-label={`${label} (disabled while signing in)`}
+                          aria-disabled="true"
+                          className="grid h-12 w-12 cursor-not-allowed place-items-center rounded-full bg-white/70 text-[#16024A]/40 shadow-none ring-1 ring-[#ECEAF2]"
+                        >
+                          <Icon className="h-4 w-4" aria-hidden />
+                        </span>
+                      );
+                    }
+                    return (
+                      <Link
+                        key={`${href}-${label}`}
+                        href={href}
+                        title={label}
+                        aria-label={label}
+                        className="grid h-12 w-12 place-items-center rounded-full bg-white text-[#16024A] shadow-[0_10px_24px_-14px_rgba(22,2,74,0.45)] ring-1 ring-[#ECEAF2] transition-transform hover:scale-105 hover:text-mint"
+                      >
+                        <Icon className="h-4 w-4" aria-hidden />
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -871,12 +1145,21 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           {meta.alt ? (
             <p className="mt-6 text-center text-[0.9rem] text-[#6B6484]">
               {meta.alt.prompt ? `${meta.alt.prompt} ` : null}
-              <Link
-                href={meta.alt.href}
-                className="font-semibold text-[#16024A] transition-colors hover:text-mint"
-              >
-                {meta.alt.label}
-              </Link>
+              {mode === "login" && loading ? (
+                <span
+                  className="cursor-not-allowed font-semibold text-[#16024A]/40"
+                  aria-disabled="true"
+                >
+                  {meta.alt.label}
+                </span>
+              ) : (
+                <Link
+                  href={meta.alt.href}
+                  className="font-semibold text-[#16024A] transition-colors hover:text-mint"
+                >
+                  {meta.alt.label}
+                </Link>
+              )}
             </p>
           ) : null}
 
@@ -887,20 +1170,18 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
       </div>
 
       {/* Visual column — tablet/desktop card only */}
-      <div className="relative hidden min-h-0 flex-col p-3 mobile-sm:p-4 laptop:flex">
+      <div
+        className={cn(
+          "relative hidden min-h-0 flex-col p-3 mobile-sm:p-4 laptop:flex",
+          mode === "login" && "laptop:min-h-[min(92vh,56rem)]",
+        )}
+      >
         <div className="min-h-0 flex-1">
           <AuthHeroPanel mode={mode} />
         </div>
       </div>
     </motion.div>
+    </>
   );
 }
 
-async function apiForgot(email: string) {
-  const { apiClient } = await import("@/lib/api/client");
-  const { endpoints } = await import("@/lib/api/endpoints");
-  await apiClient(endpoints.auth.forgotPassword, {
-    method: "POST",
-    body: { email },
-  });
-}

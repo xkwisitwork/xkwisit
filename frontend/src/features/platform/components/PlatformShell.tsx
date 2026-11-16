@@ -49,6 +49,7 @@ export function PlatformSubnav({ active }: { active: string }) {
     ["Workspaces", "/platform/workspaces"],
     ["Users", "/platform/users"],
     ["Health", "/platform/health"],
+    ["Activity", "/platform/activity"],
     ["Audit", "/platform/audit"],
   ] as const;
 

@@ -3,12 +3,7 @@
 import { useEffect, useId, useRef, useState, type PointerEvent } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import {
-  ArrowRight,
-  Calendar,
-  Phone,
-  Zap,
-} from "lucide-react";
+import { ArrowRight, Calendar, Phone, Zap } from "lucide-react";
 
 import { Container } from "@/components/layout/Container";
 import { ROUTES } from "@/config/site";
@@ -24,6 +19,49 @@ const partners = [
   { name: "STAYTROVE", href: "https://web.staytrove.com" },
   { name: "OCTOPUS", href: null },
   { name: "LAGBUY", href: "https://www.lagbuy.com" },
+] as const;
+
+const testimonials = [
+  {
+    company: "YETOSOL",
+    quote:
+      "We stopped guessing which lever was broken. Xkwisit named the leak — then the same ad spend started closing.",
+    name: "Ada Okonkwo",
+    role: "Agency owner, Yetosol",
+    image: "/images/people/founder-smile.jpg",
+  },
+  {
+    company: "GYGI",
+    quote:
+      "Brand, ads, and sales finally sat on one scoreboard. Monday stopped being a scramble — we knew what to fix first.",
+    name: "Chidi Eze",
+    role: "CEO, GYGI",
+    image: "/images/people/shop-owner.jpg",
+  },
+  {
+    company: "STAYTROVE",
+    quote:
+      "They showed us the gap between traffic and closed deals. Once we fixed that path, growth stopped feeling random.",
+    name: "Ngozi Adeyemi",
+    role: "Founder, StayTrove",
+    image: "/images/people/desk-review.jpg",
+  },
+  {
+    company: "LAGBUY",
+    quote:
+      "Xkwisit connected our offer, campaigns, and follow-up. Resources we were already spending started producing measurable results.",
+    name: "Tunde Balogun",
+    role: "CEO, Lagbuy",
+    image: "/images/people/smile-b.jpg",
+  },
+  {
+    company: "OCTOPUS",
+    quote:
+      "Clear diagnosis, clear owners, clear next move. We stopped pouring budget into the wrong channel week after week.",
+    name: "Amaka Nwosu",
+    role: "Operator, Octopus",
+    image: "/images/people/method-owner.jpg",
+  },
 ] as const;
 
 /** Shared payloads that Name-Drop across the three cards (left → right). */
@@ -130,13 +168,7 @@ const cardMeta = [
  * Framer + MotionConfig reducedMotion="user" can leave opacity:0 forever;
  * CSS defaults to visible and only animates under motion-safe.
  */
-function EmphasizedWord({
-  children,
-  reduce,
-}: {
-  children: string;
-  reduce: boolean;
-}) {
+function EmphasizedWord({ children, reduce }: { children: string; reduce: boolean }) {
   const letters = Array.from(children);
 
   return (
@@ -152,11 +184,7 @@ function EmphasizedWord({
             "relative inline-block text-[#5C5C66] opacity-100",
             !reduce && "motion-safe:animate-letter-drop",
           )}
-          style={
-            reduce
-              ? undefined
-              : { animationDelay: `${0.12 + i * 0.075}s` }
-          }
+          style={reduce ? undefined : { animationDelay: `${0.12 + i * 0.075}s` }}
           aria-hidden
         >
           {char === " " ? "\u00A0" : char}
@@ -191,21 +219,21 @@ export function Hero() {
           {pcm ? (
             <h1 className="mx-auto max-w-[20em] text-balance font-display text-[clamp(1.75rem,6.4vw,3.75rem)] font-bold leading-[1.22] tracking-[-0.03em] text-[#16024A] tablet:leading-[1.14]">
               Na system wey dey{" "}
-              <EmphasizedWord reduce={!!reduce}>show wetin dey spoil</EmphasizedWord>{" "}
-              for your business be this
+              <EmphasizedWord reduce={!!reduce}>show wetin dey spoil</EmphasizedWord> for
+              your business be this
             </h1>
           ) : (
             <h1 className="mx-auto max-w-[14em] text-balance font-display text-[clamp(2rem,6.8vw,4.1rem)] font-bold leading-[1.18] tracking-[-0.03em] text-[#16024A] tablet:leading-[1.12]">
               Growth System that{" "}
-              <EmphasizedWord reduce={!!reduce}>Exposes</EmphasizedWord> Leaks in
-              Your Business.
+              <EmphasizedWord reduce={!!reduce}>Exposes</EmphasizedWord> Leaks in Your
+              Business.
             </h1>
           )}
 
           <p className="mx-auto mt-6 max-w-xl text-[0.95rem] leading-relaxed text-[#16024A]/75 mobile-sm:mt-7 mobile-sm:text-[1.05rem] tablet:mt-8">
             {pcm
-              ? "We go look your brand, maybe ads, and your sales as one business. Then we go name di part wey don spoil, and fix am before you waste another week for di same ads."
-              : "We look at your brand, your ads, and your sales as one business. Then we name the broken part, fix that before you spend another week on the same ads."}
+              ? "We go connect your brand, marketing, and sales make we see wetin dey drive growth and wetin dey hold am back. Then we go find di gaps, fix wetin no dey work, and turn your resources to clear results."
+              : "We connect your brand, marketing, and sales to understand what’s driving growth and what’s holding it back. Then we identify the gaps, fix what isn’t working, and turn your resources into measurable results."}
           </p>
 
           <div className="mt-7 flex flex-col items-stretch justify-center gap-2.5 tablet:mt-8 tablet:flex-row tablet:items-center tablet:gap-3">
@@ -218,7 +246,7 @@ export function Hero() {
             </Link>
             <Link
               href={ROUTES.growthAssessment}
-              className="inline-flex min-h-[3.1rem] items-center justify-center gap-2 rounded-full border border-[#16024A]/12 bg-white px-7 text-[0.92rem] font-semibold text-[#16024A] shadow-sm transition hover:bg-white/80"
+              className="border-[#16024A]/12 inline-flex min-h-[3.1rem] items-center justify-center gap-2 rounded-full border bg-white px-7 text-[0.92rem] font-semibold text-[#16024A] shadow-sm transition hover:bg-white/80"
             >
               <Phone className="h-4 w-4" aria-hidden />
               {pcm ? "Free growth check" : "Free Growth Assessment"}
@@ -229,30 +257,84 @@ export function Hero() {
         <FeatureDeck tick={tick} reduce={!!reduce} />
 
         <div className="mx-auto mt-12 max-w-3xl text-center tablet:mt-16">
-          <div className="mx-auto mb-4 h-14 w-14 overflow-hidden rounded-full ring-2 ring-white shadow-md">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/images/people/founder-smile.jpg"
-              alt=""
-              className="h-full w-full object-cover"
-              draggable={false}
-            />
-          </div>
           <p className="font-display text-[1.15rem] font-bold text-[#16024A] tablet:text-[1.35rem]">
-            Clear Monday numbers
+            Hear From Top Construction CEOs
           </p>
-          <p className="mx-auto mt-2 max-w-lg text-[0.9rem] leading-relaxed text-[#16024A]/80">
-            “We stopped guessing which lever was broken. Xkwisit named the leak — then the
-            same ad spend started closing.”
-          </p>
-          <p className="mt-3 text-[0.78rem] font-semibold text-[#16024A]/70">
-            Ada Okonkwo · Agency owner, Yetosol
-          </p>
-
+          <TestimonialCarousel reduce={!!reduce} />
           <PartnerPills reduce={!!reduce} />
         </div>
       </Container>
     </section>
+  );
+}
+
+/** Auto-advancing testimonial carousel for partner CEOs. */
+function TestimonialCarousel({ reduce }: { reduce: boolean }) {
+  const [active, setActive] = useState(0);
+  const n = testimonials.length;
+  const item = testimonials[active]!;
+
+  useEffect(() => {
+    if (reduce) return;
+    const id = window.setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return;
+      }
+      setActive((prev) => (prev + 1) % n);
+    }, 4800);
+    return () => window.clearInterval(id);
+  }, [reduce, n]);
+
+  return (
+    <div className="mt-5">
+      <div className="relative mx-auto min-h-[11.5rem] max-w-lg">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={item.company}
+            initial={reduce ? false : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduce ? undefined : { opacity: 0, y: -10 }}
+            transition={reduce ? { duration: 0.15 } : { duration: 0.4, ease }}
+            className="flex flex-col items-center text-center"
+          >
+            <div className="mb-4 h-14 w-14 overflow-hidden rounded-full shadow-md ring-2 ring-white">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={item.image}
+                alt=""
+                className="h-full w-full object-cover"
+                draggable={false}
+              />
+            </div>
+            <p className="mx-auto max-w-lg text-[0.9rem] leading-relaxed text-[#16024A]/80">
+              “{item.quote}”
+            </p>
+            <p className="mt-3 text-[0.78rem] font-semibold text-[#16024A]/70">
+              {item.name} · {item.role}
+            </p>
+            <p className="mt-1 font-display text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-[#3B05C4]">
+              {item.company}
+            </p>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      <div className="mt-5 flex items-center justify-center gap-1.5">
+        {testimonials.map((t, i) => (
+          <button
+            key={t.company}
+            type="button"
+            aria-label={`Show ${t.company} testimonial`}
+            aria-pressed={i === active}
+            onClick={() => setActive(i)}
+            className={cn(
+              "h-1.5 rounded-full transition-all",
+              i === active ? "w-5 bg-[#3B05C4]" : "w-1.5 bg-[#3B05C4]/25",
+            )}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -592,7 +674,13 @@ function PayloadChip({ payload }: { payload: FlowPayload }) {
     );
   }
 
-  return <SleekGraphSlide label={payload.label} value={payload.value} points={payload.points} />;
+  return (
+    <SleekGraphSlide
+      label={payload.label}
+      value={payload.value}
+      points={payload.points}
+    />
+  );
 }
 
 /** Sleek area/line chart — not basic bars */
@@ -698,7 +786,14 @@ function SleekGraphSlide({
           />
 
           <circle cx={tip.x} cy={tip.y} r="6" fill="#3B05C4" fillOpacity="0.18" />
-          <circle cx={tip.x} cy={tip.y} r="3.25" fill="#3B05C4" stroke="white" strokeWidth="1.5" />
+          <circle
+            cx={tip.x}
+            cy={tip.y}
+            r="3.25"
+            fill="#3B05C4"
+            stroke="white"
+            strokeWidth="1.5"
+          />
         </svg>
       </div>
     </div>

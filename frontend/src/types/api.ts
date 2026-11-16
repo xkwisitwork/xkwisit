@@ -25,11 +25,13 @@ export type ApiPaginated<TItem = unknown> = {
 export type ApiErrorCode =
   | "BAD_REQUEST"
   | "UNAUTHORIZED"
+  | "SESSION_SUPERSEDED"
   | "FORBIDDEN"
   | "NOT_FOUND"
   | "CONFLICT"
   | "VALIDATION_ERROR"
   | "RATE_LIMITED"
+  | "TOO_MANY_REQUESTS"
   | "INTERNAL_ERROR"
   | "NETWORK_ERROR"
   | "UNKNOWN";

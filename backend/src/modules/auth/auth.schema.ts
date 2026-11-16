@@ -77,3 +77,20 @@ export const updateAvatarSchema = z
       ),
   })
   .strict();
+
+/** Email is intentionally omitted — accounts cannot change email here. */
+export const updateProfileSchema = z
+  .object({
+    firstName: z.string().trim().min(1, "First name is required").max(80),
+    lastName: z.string().trim().min(1, "Last name is required").max(80),
+    phone: phoneSchema,
+    companyName: z.string().trim().min(1, "Business name is required").max(120),
+  })
+  .strict()
+  .refine(
+    (d) => d.firstName.trim().toLowerCase() !== d.lastName.trim().toLowerCase(),
+    {
+      message: "Enter both your first and last name",
+      path: ["lastName"],
+    },
+  );

@@ -29,8 +29,8 @@ const autopsies = [
     spend: "₦12M",
     spendNaira: 12_000_000,
     spendNote: "paid for ads in 3 months",
-    image: "/images/levers/demand-search.jpg",
-    imageAlt: "Ad and search spend being reviewed on a laptop",
+    image: "/images/levers/ads-billboard.jpg",
+    imageAlt: "Billboard: ₦12M on ads, few bought — fix it with Xkwisit",
     stages: [
       { name: "Money spent on ads", pct: 100, tone: "full" as const },
       { name: "People who visited", pct: 62, tone: "ok" as const },
@@ -47,8 +47,8 @@ const autopsies = [
     spend: "₦4.8M",
     spendNaira: 4_800_000,
     spendNote: "logo, photos, and content",
-    image: "/images/levers/brand-board.jpg",
-    imageAlt: "Brand boards and creative direction on a desk",
+    image: "/images/levers/brand-look.jpg",
+    imageAlt: "Frustrated business owner surrounded by laptop and charts",
     stages: [
       { name: "Money spent on brand", pct: 100, tone: "full" as const },
       { name: "People who know you", pct: 71, tone: "ok" as const },
@@ -65,8 +65,8 @@ const autopsies = [
     spend: "₦7.2M",
     spendNaira: 7_200_000,
     spendNote: "salaries and sales tools",
-    image: "/images/levers/sales-pipeline.jpg",
-    imageAlt: "Sales pipeline board with deal stages",
+    image: "/images/levers/sales-people.jpg",
+    imageAlt: "Overwhelmed sales person juggling calls, binders, and bags",
     stages: [
       { name: "Money spent on sales", pct: 100, tone: "full" as const },
       { name: "Leads they called", pct: 55, tone: "warn" as const },
@@ -99,24 +99,35 @@ function stageStatus(tone: StageTone) {
   return { ok: false, label: "Money stops here" };
 }
 
-/** Simple rising leak path for the analytics panel. */
+/** Smooth ogive (spend → sale) — room for a left Y-axis, no label collisions. */
 function leakPath(stages: Autopsy["stages"]) {
-  const W = 280;
-  const H = 120;
+  const W = 340;
+  const H = 176;
+  const padL = 36;
+  const padR = 16;
+  const padTop = 22;
+  const padBottom = 20;
+  const plotW = W - padL - padR;
+  const plotH = H - padTop - padBottom;
   const pts = stages.map((stage, i) => {
-    const x = 12 + (i / (stages.length - 1)) * (W - 24);
-    const y = 16 + (1 - stage.pct / 100) * (H - 32);
+    const x = padL + (i / (stages.length - 1)) * plotW;
+    const y = padTop + (1 - stage.pct / 100) * plotH;
     return { x, y, pct: stage.pct };
   });
   let d = `M ${pts[0]!.x} ${pts[0]!.y}`;
   for (let i = 0; i < pts.length - 1; i += 1) {
     const a = pts[i]!;
     const b = pts[i + 1]!;
-    const mx = (a.x + b.x) / 2;
-    d += ` C ${mx} ${a.y}, ${mx} ${b.y}, ${b.x} ${b.y}`;
+    const dx = (b.x - a.x) * 0.42;
+    d += ` C ${a.x + dx} ${a.y}, ${b.x - dx} ${b.y}, ${b.x} ${b.y}`;
   }
-  const fill = `${d} L ${pts[pts.length - 1]!.x} ${H} L ${pts[0]!.x} ${H} Z`;
-  return { d, fill, pts, W, H };
+  const baseline = H - padBottom;
+  const fill = `${d} L ${pts[pts.length - 1]!.x} ${baseline} L ${pts[0]!.x} ${baseline} Z`;
+  const bands = [100, 75, 50, 25, 0].map((pct) => ({
+    pct,
+    y: padTop + (1 - pct / 100) * plotH,
+  }));
+  return { d, fill, pts, W, H, baseline, bands, padL, padR, padTop, padBottom };
 }
 
 function ProgressRing({
@@ -182,7 +193,6 @@ export function BudgetAutopsy() {
   const closeNaira = item.spendNaira * (close.pct / 100);
   const leaked = item.spendNaira - closeNaira;
   const curve = leakPath(item.stages);
-  const focus = item.stages.find((s) => s.tone === "crit") ?? close;
 
   return (
     <section className="relative overflow-x-clip bg-[#f7f8fc]">
@@ -210,15 +220,15 @@ export function BudgetAutopsy() {
 
         <div className="mx-auto mt-10 grid w-[98%] max-w-6xl gap-4 tablet:w-full">
           <article
-            className="rounded-[1.75rem] bg-white p-5 shadow-[0_24px_50px_-36px_rgba(22,2,74,0.35)] mobile-sm:p-7"
+            className="overflow-hidden rounded-[1.75rem] bg-white shadow-[0_24px_50px_-36px_rgba(22,2,74,0.35)]"
             style={{
               backgroundImage:
                 "radial-gradient(circle at 1px 1px, rgba(22,2,74,0.06) 1px, transparent 0)",
               backgroundSize: "18px 18px",
             }}
           >
-            <div className="grid items-center gap-6 tablet:grid-cols-2">
-              <div>
+            <div className="grid items-start tablet:grid-cols-2">
+              <div className="p-5 mobile-sm:p-7">
                 <h3 className="font-display text-[clamp(1.45rem,2.6vw,2rem)] font-bold leading-tight tracking-tight text-[#16024A]">
                   {item.label}
                 </h3>
@@ -227,8 +237,14 @@ export function BudgetAutopsy() {
                   {item.spend} · {item.spendNote}
                 </p>
               </div>
-              <div className="relative min-h-[14rem] overflow-hidden rounded-[1.4rem] bg-[#f4f4f4]">
-                <Image src={item.image} alt={item.imageAlt} fill className="object-cover" sizes="(max-width: 768px) 100vw, 480px" />
+              <div className="relative mx-auto h-[20rem] w-[98%] overflow-hidden bg-transparent tablet:h-[24rem]">
+                <Image
+                  src={item.image}
+                  alt={item.imageAlt}
+                  fill
+                  className="object-cover object-center"
+                  sizes="(max-width: 768px) 98vw, 480px"
+                />
                 <span className="absolute bottom-4 left-4 rounded-2xl bg-white px-3 py-2 text-[0.78rem] font-semibold text-[#16024A] shadow-[0_12px_28px_-16px_rgba(22,2,74,0.5)]">
                   Sold · {close.pct}%
                 </span>
@@ -246,14 +262,22 @@ export function BudgetAutopsy() {
                   <button
                     type="button"
                     onClick={() => setActive(index)}
-                    className="h-full w-full rounded-[1.75rem] bg-white p-5 text-left shadow-[0_24px_50px_-36px_rgba(22,2,74,0.35)] mobile-sm:p-6"
+                    className="flex h-full w-full flex-col overflow-hidden rounded-[1.75rem] bg-white text-left shadow-[0_24px_50px_-36px_rgba(22,2,74,0.35)]"
                   >
-                    <h3 className="font-display text-[1.25rem] font-bold leading-tight text-[#16024A]">
-                      {story.label}
-                    </h3>
-                    <p className="mt-2 text-[0.9rem] leading-relaxed text-neutral-600">{story.verdict}</p>
-                    <div className="relative mt-4 h-40 overflow-hidden rounded-[1.2rem] bg-[#f4f4f4]">
-                      <Image src={story.image} alt={story.imageAlt} fill className="object-cover" sizes="400px" />
+                    <div className="p-5 mobile-sm:p-6">
+                      <h3 className="font-display text-[1.25rem] font-bold leading-tight text-[#16024A]">
+                        {story.label}
+                      </h3>
+                      <p className="mt-2 text-[0.9rem] leading-relaxed text-neutral-600">{story.verdict}</p>
+                    </div>
+                    <div className="relative mx-auto mt-auto h-[16rem] w-[98%] overflow-hidden bg-transparent tablet:h-[18rem]">
+                      <Image
+                        src={story.image}
+                        alt={story.imageAlt}
+                        fill
+                        className="object-cover object-center"
+                        sizes="400px"
+                      />
                       <span className="absolute bottom-3 left-3 rounded-2xl bg-white px-3 py-1.5 text-[0.75rem] font-semibold text-[#16024A]">
                         {story.spend} · {story.spendNote}
                       </span>
@@ -336,13 +360,13 @@ export function BudgetAutopsy() {
                     </div>
                   </div>
 
-                  <div className="relative mx-auto aspect-[5/4] w-full max-w-[16rem] overflow-hidden rounded-[1.35rem] border border-white/20 bg-white/10 tablet:ml-auto tablet:max-w-none">
+                  <div className="relative mx-auto h-[14rem] w-[98%] overflow-hidden rounded-[1.35rem] border border-white/20 bg-transparent tablet:ml-auto tablet:h-[18rem] tablet:w-full">
                     <Image
                       src={item.image}
                       alt={item.imageAlt}
                       fill
-                      className="object-cover opacity-95"
-                      sizes="(max-width: 768px) 70vw, 280px"
+                      className="object-cover object-center opacity-95"
+                      sizes="(max-width: 768px) 98vw, 280px"
                     />
                     <span className="absolute left-3 top-3 rounded-full bg-white px-2.5 py-1 text-[0.68rem] font-semibold text-mint-ink shadow-sm">
                       Sold · {close.pct}%
@@ -357,75 +381,105 @@ export function BudgetAutopsy() {
 
             {/* Analytics + Alerts row */}
             <div className="grid gap-3 tablet:grid-cols-[1.15fr_0.85fr] tablet:gap-4">
-              <article className="rounded-[1.5rem] bg-[#16024A] p-5 text-white mobile-sm:rounded-[1.75rem] mobile-sm:p-6">
-                <div className="flex items-start justify-between gap-3">
+              <article className="rounded-[1.5rem] border border-[#E8E2D8] bg-[#FAF7F2] p-5 text-[#16024A] shadow-[0_18px_40px_-34px_rgba(22,2,74,0.28)] mobile-sm:rounded-[1.75rem] mobile-sm:p-6">
+                <div className="flex flex-wrap items-end justify-between gap-3">
                   <div>
-                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-white/60">
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[#8A7F72]">
                       The journey
                     </p>
-                    <h3 className="mt-1 font-display text-[1.15rem] font-bold">
+                    <h3 className="mt-1 font-display text-[1.15rem] font-bold leading-tight">
                       From spend to sale
                     </h3>
                   </div>
-                  <span className="rounded-full bg-white/10 px-2.5 py-1 text-[0.72rem] font-semibold text-[#C9BEFF]">
-                    Only {focus.pct}% left at the end
-                  </span>
+                  <p className="rounded-full bg-white px-3 py-1 text-[0.72rem] font-semibold text-[#3B05C4] ring-1 ring-[#E8E2D8]">
+                    {close.pct}% bought · {100 - close.pct}% lost
+                  </p>
                 </div>
 
-                <div className="relative mt-4">
+                <div className="mt-4 rounded-[1.1rem] bg-white p-3 ring-1 ring-[#EDE7DE] mobile-sm:p-4">
                   <svg
                     viewBox={`0 0 ${curve.W} ${curve.H}`}
                     className="h-auto w-full"
                     role="img"
-                    aria-label={`Leak curve for ${item.label}. Ends at ${close.pct}% sales.`}
+                    aria-label={`Spend-to-sale curve for ${item.label}. Ends at ${close.pct}% sales.`}
                   >
                     <defs>
-                      <linearGradient id={`${uid}-leak`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#FC3FE3" stopOpacity="0.45" />
-                        <stop offset="100%" stopColor="#3B05C4" stopOpacity="0.05" />
+                      <linearGradient id={`${uid}-heat`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3B05C4" stopOpacity="0.18" />
+                        <stop offset="100%" stopColor="#3B05C4" stopOpacity="0.02" />
                       </linearGradient>
-                      <linearGradient id={`${uid}-stroke`} x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#C9BEFF" />
-                        <stop offset="100%" stopColor="#FC3FE3" />
+                      <linearGradient id={`${uid}-ogive`} x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="#5B45FF" />
+                        <stop offset="100%" stopColor="#C40404" />
                       </linearGradient>
                     </defs>
-                    <path d={curve.fill} fill={`url(#${uid}-leak)`} />
+
+                    {curve.bands.map((band) => (
+                      <g key={band.pct}>
+                        <line
+                          x1={curve.padL}
+                          x2={curve.W - curve.padR}
+                          y1={band.y}
+                          y2={band.y}
+                          stroke="#F0EBE3"
+                          strokeWidth="1"
+                        />
+                        <text
+                          x={curve.padL - 8}
+                          y={band.y + 3}
+                          textAnchor="end"
+                          className="fill-[#B0A79C]"
+                          style={{ fontSize: 9, fontWeight: 600 }}
+                        >
+                          {band.pct}
+                        </text>
+                      </g>
+                    ))}
+
+                    <path d={curve.fill} fill={`url(#${uid}-heat)`} />
                     <path
                       d={curve.d}
                       fill="none"
-                      stroke={`url(#${uid}-stroke)`}
-                      strokeWidth="3"
+                      stroke={`url(#${uid}-ogive)`}
+                      strokeWidth="2.75"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
-                    {curve.pts.map((pt, i) => (
-                      <circle
-                        key={item.stages[i]!.name}
-                        cx={pt.x}
-                        cy={pt.y}
-                        r={i === item.stages.length - 1 ? 5 : 3.5}
-                        fill={i === item.stages.length - 1 ? "#FC3FE3" : "#fff"}
-                        stroke="#C9BEFF"
-                        strokeWidth="1.5"
-                      />
-                    ))}
+                    {curve.pts.map((pt, i) => {
+                      const last = i === item.stages.length - 1;
+                      return (
+                        <circle
+                          key={item.stages[i]!.name}
+                          cx={pt.x}
+                          cy={pt.y}
+                          r={last ? 5.5 : 4}
+                          fill={last ? "#C40404" : "#fff"}
+                          stroke={last ? "#C40404" : "#3B05C4"}
+                          strokeWidth="2"
+                        />
+                      );
+                    })}
                   </svg>
-                  <div className="pointer-events-none absolute right-2 top-1 rounded-xl bg-white px-2.5 py-1.5 text-[#16024A] shadow-[0_10px_24px_-12px_rgba(0,0,0,0.35)]">
-                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-neutral-500">
-                      Bought
-                    </p>
-                    <p className="font-display text-[0.95rem] font-bold leading-none">
-                      {close.pct}%
-                    </p>
-                  </div>
-                </div>
 
-                <div className="mt-3 flex justify-between gap-2 text-[0.68rem] font-medium text-white/55">
-                  {item.stages.map((stage) => (
-                    <span key={stage.name} className="truncate text-center">
-                      {stage.name.split(" ").slice(-1)[0]}
-                    </span>
-                  ))}
+                  <ol className="mt-3 grid grid-cols-4 gap-2 border-t border-[#F0EBE3] pt-3">
+                    {item.stages.map((stage, i) => (
+                      <li key={stage.name} className="min-w-0 text-center">
+                        <p className="font-display text-[0.95rem] font-bold tabular-nums text-[#16024A]">
+                          {stage.pct}%
+                        </p>
+                        <p className="mt-0.5 truncate text-[0.65rem] font-medium leading-snug text-[#8A7F72]">
+                          {stage.name.replace(/^Money spent on |^People who /i, "")}
+                        </p>
+                        <span
+                          className={cn(
+                            "mx-auto mt-1.5 block h-1 w-6 rounded-full",
+                            i === item.stages.length - 1 ? "bg-[#C40404]" : "bg-[#3B05C4]/35",
+                          )}
+                          aria-hidden
+                        />
+                      </li>
+                    ))}
+                  </ol>
                 </div>
               </article>
 

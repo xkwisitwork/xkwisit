@@ -4,6 +4,7 @@ import { BrowseReturnTracker } from "@/components/marketing/BrowseReturnTracker"
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { SiteTranslator } from "@/components/marketing/SiteTranslator";
+import { ActivityBeacon } from "@/components/marketing/ActivityBeacon";
 import { VisitBeacon } from "@/components/marketing/VisitBeacon";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
@@ -13,6 +14,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
     <CurrencyProvider>
       <LanguageProvider>
         <VisitBeacon />
+        <ActivityBeacon />
         <BrowseReturnTracker />
         <SiteTranslator />
         <div

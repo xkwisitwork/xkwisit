@@ -48,7 +48,14 @@ export function LogoMark({
     </svg>
   );
 
-  if (!href) return content;
+  // Empty string disables the home link (e.g. authenticated app shell).
+  if (!href) {
+    return (
+      <span className="inline-flex" aria-label="Xkwisit">
+        {content}
+      </span>
+    );
+  }
 
   return (
     <Link href={href} aria-label="Xkwisit - home" className="inline-flex">

@@ -1,4 +1,12 @@
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
+import {
+  Children,
+  cloneElement,
+  forwardRef,
+  isValidElement,
+  type ButtonHTMLAttributes,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { Loader2 } from "lucide-react";
 
@@ -20,14 +28,45 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
     asChild?: boolean;
   };
 
+function renderInner({
+  loading,
+  loadingText,
+  leftIcon,
+  rightIcon,
+  label,
+}: {
+  loading: boolean;
+  loadingText?: string;
+  leftIcon?: ReactNode;
+  rightIcon?: ReactNode;
+  label: ReactNode;
+}) {
+  if (loading) {
+    return (
+      <>
+        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+        <span className="truncate">{loadingText ?? label}</span>
+      </>
+    );
+  }
+
+  return (
+    <>
+      {leftIcon ? <span className="shrink-0">{leftIcon}</span> : null}
+      {label != null && label !== false ? (
+        <span className="truncate">{label}</span>
+      ) : null}
+      {rightIcon ? <span className="shrink-0">{rightIcon}</span> : null}
+    </>
+  );
+}
+
 /**
  * The canonical button across the platform.
  * Supports 8 visual variants, 7 sizes, icon slots, and a built-in loading state.
  *
- * @example
- *   <Button variant="contained" size="lg" leftIcon={<Plus />}>
- *     Add Client
- *   </Button>
+ * When `asChild` is set, icons are injected into the single child (e.g. Link)
+ * so the label stays visible — Slot cannot wrap a fragment of icon + child.
  */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   {
@@ -48,36 +87,62 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   },
   ref,
 ) {
-  const Comp = asChild ? Slot : "button";
   const isDisabled = disabled || loading;
+  const classes = cn(
+    buttonVariants({ variant, size, fullWidth, pill }),
+    loading && "cursor-wait",
+    className,
+  );
+
+  if (asChild) {
+    const child = Children.only(children);
+    if (!isValidElement(child)) {
+      return null;
+    }
+
+    const element = child as ReactElement<{
+      children?: ReactNode;
+      className?: string;
+    }>;
+
+    return (
+      <Slot
+        ref={ref}
+        aria-disabled={isDisabled ? true : undefined}
+        aria-busy={loading || undefined}
+        className={classes}
+        {...props}
+      >
+        {cloneElement(element, {
+          children: renderInner({
+            loading,
+            loadingText,
+            leftIcon,
+            rightIcon,
+            label: element.props.children,
+          }),
+        })}
+      </Slot>
+    );
+  }
 
   return (
-    <Comp
+    <button
       ref={ref}
-      type={asChild ? undefined : type}
-      disabled={asChild ? undefined : isDisabled}
-      aria-disabled={asChild && isDisabled ? true : undefined}
+      type={type}
+      disabled={isDisabled}
       aria-busy={loading || undefined}
-      className={cn(
-        buttonVariants({ variant, size, fullWidth, pill }),
-        loading && "cursor-wait",
-        className,
-      )}
+      className={classes}
       {...props}
     >
-      {loading ? (
-        <>
-          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-          <span>{loadingText ?? children}</span>
-        </>
-      ) : (
-        <>
-          {leftIcon && <span className="shrink-0">{leftIcon}</span>}
-          {children}
-          {rightIcon && <span className="shrink-0">{rightIcon}</span>}
-        </>
-      )}
-    </Comp>
+      {renderInner({
+        loading,
+        loadingText,
+        leftIcon,
+        rightIcon,
+        label: children,
+      })}
+    </button>
   );
 });
 

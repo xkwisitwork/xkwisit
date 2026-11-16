@@ -1,18 +1,8 @@
-/**
- * Currency formatting helpers.
- * Default currency is Nigerian Naira (₦) - the primary market for Xkwisit.
- */
-
 export type SupportedCurrency = "NGN" | "USD" | "GBP" | "EUR";
 
 const DEFAULT_CURRENCY: SupportedCurrency = "NGN";
 const DEFAULT_LOCALE = "en-NG";
 
-/**
- * Formats a number as currency.
- * formatCurrency(8400000) → "₦8,400,000"
- * formatCurrency(8400000, { compact: true }) → "₦8.4M"
- */
 export function formatCurrency(
   value: number,
   options: {
@@ -44,10 +34,6 @@ export function formatCurrency(
   return formatter.format(value);
 }
 
-/**
- * Compact form. ₦8,400,000 → "₦8.4M"
- * Useful for stat cards and dashboard KPIs.
- */
 export function formatCurrencyCompact(
   value: number,
   currency: SupportedCurrency = DEFAULT_CURRENCY,

@@ -8,6 +8,7 @@ import { validate } from "../../middleware/validate.middleware.js";
 import * as controller from "./platform.controller.js";
 import {
   extendTrialSchema,
+  networkTableParamsSchema,
   setPlatformAdminSchema,
   updateWorkspaceSchema,
   userIdParamsSchema,
@@ -20,6 +21,11 @@ router.use(authMiddleware, platformAdminMiddleware);
 
 router.get("/stats", controller.stats);
 router.get("/health", controller.health);
+router.get(
+  "/network-tables/:table",
+  validate({ params: networkTableParamsSchema }),
+  controller.listNetworkTable,
+);
 router.get("/audit", controller.audit);
 
 router.get("/workspaces", controller.listWorkspaces);

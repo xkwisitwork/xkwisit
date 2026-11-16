@@ -49,5 +49,6 @@ scripts/nigerian-tts/.venv/
 *.tsbuildinfo
 next-env.d.ts
 
-# Visitor place log (country and city only)
+# Visitor place + activity logs (local NDJSON)
 /data/visits.ndjson
+/data/activity.ndjson

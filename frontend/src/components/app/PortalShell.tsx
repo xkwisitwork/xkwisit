@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 
 import { PortalSidebar } from "@/components/app/PortalSidebar";
+import { SessionConflictGuard } from "@/components/auth/SessionConflictGuard";
 import { AuthContextProvider } from "@/contexts/AuthContext";
 import { ClientContextProvider } from "@/contexts/ClientContext";
 import { NotificationContextProvider } from "@/contexts/NotificationContext";
@@ -33,6 +34,7 @@ export function PortalShell({ children, session, client, contacts }: PortalShell
     <AuthContextProvider key={session.user.id} initialSession={session}>
       <ClientContextProvider initialClient={client} initialContacts={contacts}>
         <NotificationContextProvider>
+          <SessionConflictGuard />
           <div
             className="flex h-dvh max-h-dvh overflow-hidden bg-[#F7F5FC]"
             data-shell="portal"
