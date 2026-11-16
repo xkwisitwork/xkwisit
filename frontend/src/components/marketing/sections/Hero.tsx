@@ -573,6 +573,7 @@ function FeatureCardFace({
         className,
       )}
     >
+      {/* Full-bleed photo — keep overlays off this plane */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={meta.image}
@@ -580,48 +581,28 @@ function FeatureCardFace({
         className="absolute inset-0 h-full w-full object-cover"
         draggable={false}
       />
+      {/* Soft bottom wash only — leaves the photo open above the copy */}
       <div
         aria-hidden
-        className="absolute inset-0 bg-gradient-to-b from-[#0B021F]/35 via-[#0B021F]/15 to-[#0B021F]/90"
+        className="absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-[#0B021F] via-[#0B021F]/70 to-transparent"
       />
 
-      {/* Upper chip — centered in the image zone; bounce stays inside the card */}
-      <div className="relative z-10 flex min-h-[9.5rem] flex-1 items-center justify-center px-3 py-4 tablet:min-h-[11rem]">
+      <div className="relative z-10 mt-auto flex min-h-0 flex-col justify-end px-3 pb-3 pt-10">
         <AnimatePresence mode="wait" initial={false}>
           {showPayload ? (
             <motion.div
               key={payloadKey}
-              initial={reduce ? false : { opacity: 0, y: 16, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={reduce ? undefined : { opacity: 0, y: 10, scale: 0.94 }}
-              transition={
-                reduce
-                  ? { duration: 0.2 }
-                  : { type: "spring", stiffness: 380, damping: 18, mass: 0.7 }
-              }
-              className="mx-auto flex w-full max-w-[94%] justify-center"
+              initial={reduce ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduce ? undefined : { opacity: 0, y: 4 }}
+              transition={reduce ? { duration: 0.15 } : { duration: 0.28, ease }}
+              className="mb-2 w-full"
             >
-              <motion.div
-                animate={reduce ? undefined : { y: [0, -5, 0] }}
-                transition={
-                  reduce
-                    ? undefined
-                    : {
-                        duration: 2.2,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: 0.4,
-                      }
-                }
-              >
-                <PayloadChip payload={payload} />
-              </motion.div>
+              <PayloadChip payload={payload} compact />
             </motion.div>
           ) : null}
         </AnimatePresence>
-      </div>
 
-      <div className="relative z-10 shrink-0 bg-[#0B021F]/80 px-3.5 pb-3 pt-2 backdrop-blur-sm">
         <p className="text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-[#C8F5E4]">
           {meta.eyebrow}
         </p>
@@ -633,24 +614,35 @@ function FeatureCardFace({
   );
 }
 
-function PayloadChip({ payload }: { payload: FlowPayload }) {
+function PayloadChip({
+  payload,
+  compact = false,
+}: {
+  payload: FlowPayload;
+  compact?: boolean;
+}) {
   if (payload.kind === "easy") {
     return (
-      <div className="w-[11.5rem] rounded-2xl bg-white p-2 shadow-[0_14px_32px_-12px_rgba(22,2,74,0.5)] ring-1 ring-[#EDE8F7]">
-        <div className="flex items-center gap-2 rounded-xl bg-[#F7F5FC] px-2 py-1.5">
-          <span className="grid h-7 w-7 place-items-center rounded-full bg-[#3B05C4] text-white">
+      <div
+        className={cn(
+          "flex w-full max-w-[15rem] items-center gap-2 rounded-xl bg-white/95 p-1.5 shadow-[0_10px_24px_-14px_rgba(22,2,74,0.55)] ring-1 ring-white/70 backdrop-blur-sm",
+          !compact && "w-[11.5rem] flex-col rounded-2xl p-2",
+        )}
+      >
+        <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg bg-[#F7F5FC] px-2 py-1">
+          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#3B05C4] text-white">
             <Calendar className="h-3 w-3" aria-hidden />
           </span>
           <div className="min-w-0">
-            <p className="truncate text-[0.72rem] font-semibold text-[#16024A]">
+            <p className="truncate text-[0.68rem] font-semibold text-[#16024A]">
               {payload.title}
             </p>
-            <p className="truncate text-[0.58rem] text-neutral-600">{payload.meta}</p>
+            <p className="truncate text-[0.55rem] text-neutral-600">{payload.meta}</p>
           </div>
         </div>
-        <span className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-full bg-[#16024A] py-1.5 text-[0.68rem] font-semibold text-white">
-          Start now
-          <ArrowRight className="h-3 w-3" aria-hidden />
+        <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-[#16024A] px-2.5 py-1 text-[0.58rem] font-semibold text-white">
+          Start
+          <ArrowRight className="h-2.5 w-2.5" aria-hidden />
         </span>
       </div>
     );
@@ -658,17 +650,17 @@ function PayloadChip({ payload }: { payload: FlowPayload }) {
 
   if (payload.kind === "listen") {
     return (
-      <div className="w-[12rem] rounded-[1.15rem] bg-white p-2.5 shadow-[0_14px_32px_-12px_rgba(22,2,74,0.5)] ring-1 ring-[#EDE8F7]">
-        <div className="flex items-start gap-2">
-          <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#F4F0FF] text-[0.58rem] font-bold text-[#3B05C4]">
-            XP
-          </span>
-          <div className="min-w-0">
-            <p className="text-[0.72rem] font-semibold leading-snug text-[#16024A]">
-              {payload.quote}
-            </p>
-            <p className="mt-0.5 text-[0.58rem] text-neutral-600">{payload.who}</p>
-          </div>
+      <div className="flex w-full max-w-[15rem] items-start gap-2 rounded-xl bg-white/95 p-2 shadow-[0_10px_24px_-14px_rgba(22,2,74,0.55)] ring-1 ring-white/70 backdrop-blur-sm">
+        <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#F4F0FF] text-[0.52rem] font-bold text-[#3B05C4]">
+          XP
+        </span>
+        <div className="min-w-0">
+          <p className="line-clamp-2 text-[0.68rem] font-semibold leading-snug text-[#16024A]">
+            {payload.quote}
+          </p>
+          <p className="mt-0.5 truncate text-[0.55rem] text-neutral-600">
+            {payload.who}
+          </p>
         </div>
       </div>
     );
@@ -679,35 +671,37 @@ function PayloadChip({ payload }: { payload: FlowPayload }) {
       label={payload.label}
       value={payload.value}
       points={payload.points}
+      compact={compact}
     />
   );
 }
 
-/** Sleek area/line chart — not basic bars */
+/** Compact sparkline chip — sits with the card copy, not over the photo */
 function SleekGraphSlide({
   label,
   value,
   points,
+  compact = false,
 }: {
   label: string;
   value: string;
   points: readonly number[];
+  compact?: boolean;
 }) {
   const uid = useId().replace(/:/g, "");
   const fillId = `sleekFill-${uid}`;
   const strokeId = `sleekStroke-${uid}`;
-  const glowId = `sleekGlow-${uid}`;
 
-  const w = 200;
-  const h = 64;
-  const pad = 6;
+  const w = 120;
+  const h = 36;
+  const pad = 3;
   const min = Math.min(...points);
   const max = Math.max(...points);
   const range = Math.max(max - min, 1);
 
   const coords = points.map((p, i) => {
     const x = pad + (i / (points.length - 1)) * (w - pad * 2);
-    const y = h - pad - ((p - min) / range) * (h - pad * 2 - 4);
+    const y = h - pad - ((p - min) / range) * (h - pad * 2 - 2);
     return { x, y };
   });
 
@@ -719,83 +713,68 @@ function SleekGraphSlide({
   const tip = coords[coords.length - 2] ?? coords[coords.length - 1]!;
 
   return (
-    <div className="w-[11.75rem] overflow-hidden rounded-2xl bg-white p-2.5 shadow-[0_14px_32px_-12px_rgba(22,2,74,0.5)] ring-1 ring-[#EDE8F7]">
-      <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <p className="truncate text-[0.58rem] font-medium text-neutral-600">{label}</p>
-          <p className="font-display text-[1.05rem] font-bold leading-none tracking-tight text-[#16024A]">
-            {value}
+    <div
+      className={cn(
+        "flex w-full max-w-[15rem] items-center gap-2.5 overflow-hidden rounded-xl bg-white/95 p-2 shadow-[0_10px_24px_-14px_rgba(22,2,74,0.55)] ring-1 ring-white/70 backdrop-blur-sm",
+        !compact && "max-w-[12rem]",
+      )}
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <p className="truncate text-[0.55rem] font-medium text-neutral-600">
+            {label}
           </p>
+          <span className="shrink-0 rounded-full bg-[#E8F8EF] px-1.5 py-0.5 text-[0.5rem] font-semibold text-[#027A48]">
+            +18%
+          </span>
         </div>
-        <span className="shrink-0 rounded-full bg-[#E8F8EF] px-1.5 py-0.5 text-[0.55rem] font-semibold text-[#027A48]">
-          +18%
-        </span>
+        <p className="font-display text-[0.95rem] font-bold leading-none tracking-tight text-[#16024A]">
+          {value}
+        </p>
       </div>
 
-      <div className="relative mt-1.5">
-        <svg viewBox={`0 0 ${w} ${h}`} className="h-12 w-full" aria-hidden>
-          <defs>
-            <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3B05C4" stopOpacity="0.35" />
-              <stop offset="55%" stopColor="#3B05C4" stopOpacity="0.08" />
-              <stop offset="100%" stopColor="#3B05C4" stopOpacity="0" />
-            </linearGradient>
-            <linearGradient id={strokeId} x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#5B45FF" />
-              <stop offset="100%" stopColor="#3B05C4" />
-            </linearGradient>
-            <filter id={glowId} x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="2.5" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-
-          {[0.25, 0.5, 0.75].map((t) => (
-            <line
-              key={t}
-              x1={pad}
-              x2={w - pad}
-              y1={pad + t * (h - pad * 2)}
-              y2={pad + t * (h - pad * 2)}
-              stroke="#EDE8F7"
-              strokeWidth="1"
-            />
-          ))}
-
-          <motion.path
-            d={area}
-            fill={`url(#${fillId})`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          />
-          <motion.path
-            d={line}
-            fill="none"
-            stroke={`url(#${strokeId})`}
-            strokeWidth="2.75"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            filter={`url(#${glowId})`}
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 0.85, ease }}
-          />
-
-          <circle cx={tip.x} cy={tip.y} r="6" fill="#3B05C4" fillOpacity="0.18" />
-          <circle
-            cx={tip.x}
-            cy={tip.y}
-            r="3.25"
-            fill="#3B05C4"
-            stroke="white"
-            strokeWidth="1.5"
-          />
-        </svg>
-      </div>
+      <svg
+        viewBox={`0 0 ${w} ${h}`}
+        className="h-8 w-[4.5rem] shrink-0"
+        aria-hidden
+      >
+        <defs>
+          <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#3B05C4" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#3B05C4" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id={strokeId} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#5B45FF" />
+            <stop offset="100%" stopColor="#3B05C4" />
+          </linearGradient>
+        </defs>
+        <motion.path
+          d={area}
+          fill={`url(#${fillId})`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4 }}
+        />
+        <motion.path
+          d={line}
+          fill="none"
+          stroke={`url(#${strokeId})`}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.7, ease }}
+        />
+        <circle
+          cx={tip.x}
+          cy={tip.y}
+          r="2.5"
+          fill="#3B05C4"
+          stroke="white"
+          strokeWidth="1.25"
+        />
+      </svg>
     </div>
   );
 }
